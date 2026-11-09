@@ -33,6 +33,7 @@ export default function CartDrawer() {
     deliveryFee,
     total,
     totalItems,
+    freeDeliveryThreshold,
   } = useCart();
 
   // Mode: "bag" | "checkout" | "success"
@@ -55,7 +56,7 @@ export default function CartDrawer() {
 
   if (!isOpen) return null;
 
-  const freeDeliveryDiff = siteSettings.freeDeliveryThreshold - subtotal;
+  const freeDeliveryDiff = freeDeliveryThreshold - subtotal;
 
   const handleWhatsAppOrder = () => {
     const bagItems = items.map((item) => ({

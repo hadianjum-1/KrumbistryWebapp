@@ -16,6 +16,7 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   subtotal: number;
+  freeDeliveryThreshold: number;
   deliveryFee: number;
   total: number;
 }
@@ -27,7 +28,33 @@ const CART_STORAGE_KEY = "krumbistry_cart_v1";
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [deliverySettings, setDeliverySettings] = useState({
+    deliveryFee: siteSettings.deliveryFee,
+    freeDeliveryThreshold: siteSettings.freeDeliveryThreshold,
+  });
   const [, startTransition] = useTransition();
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch("/api/settings", { cache: "no-store", signal: controller.signal })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok || !json.success || !json.data) {
+          throw new Error(json.error || "Failed to load checkout settings");
+        }
+        setDeliverySettings({
+          deliveryFee: Number(json.data.deliveryFee),
+          freeDeliveryThreshold: Number(json.data.freeDeliveryThreshold),
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === "AbortError") return;
+        console.error("Checkout settings fetch error:", error);
+      });
+
+    return () => controller.abort();
+  }, [isOpen]);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -105,9 +132,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 
   const deliveryFee =
-    subtotal === 0 || subtotal >= siteSettings.freeDeliveryThreshold
+    subtotal === 0 || subtotal >= deliverySettings.freeDeliveryThreshold
       ? 0
-      : siteSettings.deliveryFee;
+      : deliverySettings.deliveryFee;
 
   const total = subtotal + deliveryFee;
 
@@ -125,6 +152,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         totalItems,
         subtotal,
+        freeDeliveryThreshold: deliverySettings.freeDeliveryThreshold,
         deliveryFee,
         total,
       }}
@@ -141,4 +169,3 @@ export function useCart() {
   }
   return context;
 }
-

@@ -1,6 +1,6 @@
 import { OrderStatus, PaymentMethod, PaymentStatus, Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
-import { siteSettings } from "@/config/site";
+import { getSettings } from "@/services/settingsService";
 import { initialProducts } from "@/data/mockCatalog";
 
 export interface CreateOrderInput {
@@ -18,6 +18,8 @@ export interface CreateOrderInput {
 }
 
 export async function createOrder(input: CreateOrderInput) {
+  const siteSettings = await getSettings();
+
   // 1. Fetch products from database or fallback catalog
   const productIds = input.items.map((i) => i.productId);
 
