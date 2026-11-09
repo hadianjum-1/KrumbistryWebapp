@@ -1,224 +1,351 @@
-
 "use client";
 
 import { useState, type FormEvent } from "react";
-import Link from "next/link";
 import {
   ArrowRight,
   ArrowUpRight,
+  CheckCircle2,
   Clock3,
   Mail,
   MapPin,
   MessageCircle,
   Phone,
-  Send,
   Sparkles,
 } from "lucide-react";
 import InstagramIcon from "@/components/ui/InstagramIcon";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import { siteSettings } from "@/config/site";
+import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    subject: "General enquiry",
+    message: "",
+    honeypot: "",
+  });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    // Frontend demo only. Connect this form to the backend later.
-    setSubmitted(true);
+    if (formData.honeypot) return; // Silent spam drop
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.trim() || undefined,
+          subject: formData.subject.trim() || "General Inquiry",
+          message: formData.message.trim(),
+          honeypot: formData.honeypot || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Submission failed. Please try again.");
+      }
+
+      setSubmitted(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to send message";
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
+
+  const whatsAppGeneralUrl = getWhatsAppUrl(
+    `Hello ${siteSettings.bakeryName}! I would like to get in touch regarding your bakery.`
+  );
 
   return (
     <>
-    
-    <Header/>
-    <main className="min-h-screen bg-[#F8F3E9] text-[#32190D]">
-      <section className="relative overflow-hidden border-b border-[#32190D]/10">
-        <div className="mx-auto max-w-7xl px-6 pb-16 pt-20 md:px-10 md:pb-24 md:pt-28">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-[#D6A64B]/50 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em]">
-            <Sparkles size={14} className="text-[#B88632]" />
-            We'd love to hear from you
-          </div>
-
-          <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr] md:items-end">
-            <div>
-              <p className="mb-4 text-sm uppercase tracking-[0.25em] text-[#8C6B4B]">
-                Get in touch
-              </p>
-              <h1 className="max-w-3xl font-serif text-5xl leading-[1.08] md:text-7xl">
-                Let&apos;s make something
-                <span className="italic text-[#B88632]"> delicious.</span>
-              </h1>
-            </div>
-            <p className="max-w-md text-base leading-8 text-[#6F5A4B] md:justify-self-end">
-              Planning a celebration, craving something sweet, or have a
-              question about an order? We&apos;re just a message away.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-12 px-6 py-16 md:grid-cols-[0.8fr_1.2fr] md:px-10 md:py-24">
-        <aside>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.22em] text-[#B88632]">
-            Contact details
-          </p>
-          <h2 className="mb-5 font-serif text-3xl md:text-4xl">
-            A little conversation goes a long way.
-          </h2>
-          <p className="mb-10 max-w-md leading-7 text-[#6F5A4B]">
-            Reach out for custom cakes, bulk orders, product questions, or
-            anything else. We&apos;ll be happy to help.
-          </p>
-
-          <div className="space-y-7">
-            <ContactDetail
-              icon={<Phone size={19} />}
-              title="Call us"
-              value="+92 XXX XXXXXXX"
-              href="tel:+92XXXXXXXXXX"
-            />
-            <ContactDetail
-              icon={<Mail size={19} />}
-              title="Email"
-              value="hello@krumbistry.com"
-              href="mailto:hello@krumbistry.com"
-            />
-            <ContactDetail
-              icon={<MapPin size={19} />}
-              title="Visit us"
-              value="Add bakery address here"
-            />
-            <ContactDetail
-              icon={<Clock3 size={19} />}
-              title="Opening hours"
-              value="Add business hours here"
-            />
-          </div>
-
-          <a
-            href="https://wa.me/92XXXXXXXXXX"
-            target="_blank"
-            rel="noreferrer"
-            className="mt-10 inline-flex items-center gap-3 rounded-full bg-[#32190D] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#4A2918]"
-          >
-            <MessageCircle size={18} />
-            Chat on WhatsApp
-            <ArrowUpRight size={16} />
-          </a>
-
-          <div className="mt-10 flex items-center gap-3 text-sm text-[#6F5A4B]">
-            <InstagramIcon size={17} />
-            <a href="#" className="transition hover:text-[#B88632]">
-              Follow us on Instagram
-            </a>
-          </div>
-        </aside>
-
-        <div className="rounded-[2rem] border border-[#32190D]/10 bg-white/70 p-6 shadow-[0_20px_70px_rgba(50,25,13,0.06)] md:p-10">
-          {submitted ? (
-            <div className="flex min-h-[500px] flex-col items-center justify-center text-center">
-              <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#D6A64B]/15 text-[#9B7027]">
-                <Send size={27} />
+      <Header />
+      <main className="min-h-screen bg-[#F8F3E9] text-[#32190D]">
+        {/* Hero Section */}
+        <section className="page-hero relative overflow-hidden border-b border-[#32190D]/10 pt-20 pb-16 md:pt-28 md:pb-24">
+          <div className="site-container">
+            <div className="max-w-3xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#D6A64B]/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-[#98743A] mb-6">
+                <Sparkles size={13} className="text-[#B88632]" />
+                WE&apos;D LOVE TO HEAR FROM YOU
               </div>
-              <h2 className="font-serif text-3xl">Thank you!</h2>
-              <p className="mt-3 max-w-sm leading-7 text-[#6F5A4B]">
-                Your form demo has been submitted. The form is not connected
-                to email or a database yet.
+
+              <h1 className="font-serif text-5xl md:text-7xl font-medium leading-[1.05] tracking-tight">
+                Let&apos;s make something{" "}
+                <em className="text-[#D6A64B] font-display italic font-normal">
+                  delicious.
+                </em>
+              </h1>
+
+              <p className="mt-6 text-base md:text-lg leading-relaxed text-[#806E5D] max-w-2xl">
+                Planning a celebration, craving something sweet, or have a question about an order?
+                Our bakery team is always here to assist.
               </p>
-              <button
-                onClick={() => setSubmitted(false)}
-                className="mt-8 rounded-full border border-[#32190D]/20 px-6 py-3 text-sm font-semibold transition hover:bg-[#F8F3E9]"
-              >
-                Send another message
-              </button>
             </div>
-          ) : (
-            <>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#B88632]">
-                Send an enquiry
-              </p>
-              <h2 className="mb-8 font-serif text-3xl md:text-4xl">
-                Tell us what&apos;s on your mind.
-              </h2>
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <FormField label="Your name" name="name" placeholder="Full name" required />
-                  <FormField label="Email address" name="email" type="email" placeholder="you@example.com" required />
-                </div>
-
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <FormField label="Phone number" name="phone" placeholder="+92 ..." />
-                  <div>
-                    <label htmlFor="subject" className="mb-2 block text-sm font-semibold">
-                      What is this about?
-                    </label>
-                    <select
-                      id="subject"
-                      name="subject"
-                      required
-                      defaultValue=""
-                      className="w-full rounded-xl border border-[#32190D]/15 bg-transparent px-4 py-4 text-sm outline-none transition focus:border-[#B88632]"
-                    >
-                      <option value="" disabled>Select an option</option>
-                      <option>General enquiry</option>
-                      <option>Custom cake order</option>
-                      <option>Bulk / event order</option>
-                      <option>Product question</option>
-                      <option>Feedback</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="mb-2 block text-sm font-semibold">
-                    Your message
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    rows={5}
-                    required
-                    placeholder="Tell us a little about what you need..."
-                    className="w-full resize-y rounded-xl border border-[#32190D]/15 bg-transparent px-4 py-4 text-sm outline-none transition placeholder:text-[#9A897D] focus:border-[#B88632]"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#32190D] px-7 py-4 text-sm font-semibold text-white transition hover:bg-[#4A2918] sm:w-auto"
-                >
-                  Send message <ArrowRight size={17} />
-                </button>
-
-                <p className="text-xs leading-6 text-[#8B7768]">
-                  This is a frontend preview. Messages will not be delivered
-                  until we connect the backend.
-                </p>
-              </form>
-            </>
-          )}
-        </div>
-      </section>
-
-      <section className="border-t border-[#32190D]/10 bg-[#F0E8DA]">
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-12 md:flex-row md:items-center md:px-10">
-          <div>
-            <p className="mb-2 text-xs uppercase tracking-[0.2em] text-[#B88632]">
-              Something special?
-            </p>
-            <h2 className="font-serif text-3xl">Explore our freshly baked menu.</h2>
           </div>
-          <Link
-            href="/menu"
-            className="inline-flex items-center gap-3 rounded-full border border-[#32190D]/20 px-6 py-4 text-sm font-semibold transition hover:bg-[#32190D] hover:text-white"
-          >
-            Explore menu <ArrowUpRight size={17} />
-          </Link>
-        </div>
-      </section>
-    </main>
-    <Footer/>
+        </section>
+
+        {/* Contact Grid Section */}
+        <section className="section py-16 md:py-24">
+          <div className="site-container grid gap-12 lg:grid-cols-[0.8fr_1.2fr]">
+            {/* Contact Details Aside */}
+            <aside className="space-y-8">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#B88632] mb-2">
+                  DIRECT CONTACT
+                </p>
+                <h2 className="font-serif text-3xl md:text-4xl font-medium mb-4">
+                  A little conversation goes a long way.
+                </h2>
+                <p className="text-sm text-[#6F5A4B] leading-relaxed">
+                  Reach out for event catering, bulk dessert boxes, custom inquiries, or general questions.
+                </p>
+              </div>
+
+              <div className="space-y-6 border-y border-[#32190D]/10 py-8">
+                <ContactDetail
+                  icon={<Phone size={19} />}
+                  title="Telephone"
+                  value={siteSettings.contactPhone}
+                  href={`tel:${siteSettings.contactPhone.replace(/\s/g, "")}`}
+                />
+                <ContactDetail
+                  icon={<Mail size={19} />}
+                  title="Email"
+                  value={siteSettings.contactEmail}
+                  href={`mailto:${siteSettings.contactEmail}`}
+                />
+                <ContactDetail
+                  icon={<MapPin size={19} />}
+                  title="Boutique Location"
+                  value={siteSettings.address}
+                />
+                <ContactDetail
+                  icon={<Clock3 size={19} />}
+                  title="Bakery Hours"
+                  value={siteSettings.openingHours}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <a
+                  href={whatsAppGeneralUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-3 rounded-full bg-[#32190D] px-7 py-4 text-xs font-bold text-white transition hover:bg-[#4A2918]"
+                >
+                  <MessageCircle size={18} />
+                  Chat on WhatsApp Directly
+                  <ArrowUpRight size={16} />
+                </a>
+
+                <div className="flex items-center gap-3 text-xs text-[#6F5A4B] pt-2">
+                  <InstagramIcon size={17} />
+                  <a
+                    href={siteSettings.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-[#B88632] transition-colors"
+                  >
+                    Follow our kitchen on Instagram
+                  </a>
+                </div>
+              </div>
+            </aside>
+
+            {/* Form Container */}
+            <div className="rounded-sm border border-[#32190D]/10 bg-white p-6 md:p-10 shadow-sm">
+              {submitted ? (
+                <div className="flex min-h-[450px] flex-col items-center justify-center text-center p-6">
+                  <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[#D6A64B]/20 text-[#9B7027]">
+                    <CheckCircle2 size={32} />
+                  </div>
+                  <span className="text-xs font-semibold tracking-widest text-[#B88632] uppercase">
+                    MESSAGE SENT
+                  </span>
+                  <h2 className="font-serif text-3xl font-medium mt-2 mb-3">
+                    Thank you, {formData.name}!
+                  </h2>
+                  <p className="max-w-md text-sm leading-relaxed text-[#6F5A4B] mb-8">
+                    We have received your enquiry regarding &ldquo;{formData.subject}&rdquo;.
+                    Our team typically responds within a few business hours.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubmitted(false);
+                      setFormData({
+                        name: "",
+                        email: "",
+                        phone: "",
+                        subject: "General enquiry",
+                        message: "",
+                        honeypot: "",
+                      });
+                    }}
+                    className="button button-outline text-xs"
+                  >
+                    Send Another Message
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-8">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#B88632] mb-1">
+                      GET IN TOUCH
+                    </p>
+                    <h2 className="font-serif text-3xl md:text-4xl font-medium">
+                      Send us an enquiry.
+                    </h2>
+                  </div>
+
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Honeypot field for bot prevention */}
+                    <div className="hidden" aria-hidden="true">
+                      <input
+                        type="text"
+                        name="website"
+                        tabIndex={-1}
+                        value={formData.honeypot}
+                        onChange={(e) =>
+                          setFormData({ ...formData, honeypot: e.target.value })
+                        }
+                        autoComplete="off"
+                      />
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="name" className="mb-1.5 block text-xs font-semibold">
+                          Your Name *
+                        </label>
+                        <input
+                          id="name"
+                          name="name"
+                          type="text"
+                          required
+                          placeholder="Your full name"
+                          value={formData.name}
+                          onChange={(e) =>
+                            setFormData({ ...formData, name: e.target.value })
+                          }
+                          className="w-full rounded-sm border border-[#32190D]/15 bg-[#FAF6EE] px-4 py-3 text-xs outline-none transition focus:border-[#B88632]"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="email" className="mb-1.5 block text-xs font-semibold">
+                          Email Address *
+                        </label>
+                        <input
+                          id="email"
+                          name="email"
+                          type="email"
+                          required
+                          placeholder="you@domain.com"
+                          value={formData.email}
+                          onChange={(e) =>
+                            setFormData({ ...formData, email: e.target.value })
+                          }
+                          className="w-full rounded-sm border border-[#32190D]/15 bg-[#FAF6EE] px-4 py-3 text-xs outline-none transition focus:border-[#B88632]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="phone" className="mb-1.5 block text-xs font-semibold">
+                          Phone Number (Optional)
+                        </label>
+                        <input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          placeholder="+92 300 0000000"
+                          value={formData.phone}
+                          onChange={(e) =>
+                            setFormData({ ...formData, phone: e.target.value })
+                          }
+                          className="w-full rounded-sm border border-[#32190D]/15 bg-[#FAF6EE] px-4 py-3 text-xs outline-none transition focus:border-[#B88632]"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="subject" className="mb-1.5 block text-xs font-semibold">
+                          Subject *
+                        </label>
+                        <select
+                          id="subject"
+                          name="subject"
+                          required
+                          value={formData.subject}
+                          onChange={(e) =>
+                            setFormData({ ...formData, subject: e.target.value })
+                          }
+                          className="w-full rounded-sm border border-[#32190D]/15 bg-[#FAF6EE] px-4 py-3 text-xs outline-none transition focus:border-[#B88632]"
+                        >
+                          <option value="General enquiry">General enquiry</option>
+                          <option value="Custom cake order">Custom cake order</option>
+                          <option value="Bulk / corporate order">Bulk / corporate order</option>
+                          <option value="Product or allergen inquiry">Product or allergen inquiry</option>
+                          <option value="Feedback / Experience">Feedback / Experience</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="message" className="mb-1.5 block text-xs font-semibold">
+                        Your Message *
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        rows={5}
+                        required
+                        placeholder="Tell us what you're thinking or planning..."
+                        value={formData.message}
+                        onChange={(e) =>
+                          setFormData({ ...formData, message: e.target.value })
+                        }
+                        className="w-full resize-y rounded-sm border border-[#32190D]/15 bg-[#FAF6EE] px-4 py-3 text-xs outline-none transition focus:border-[#B88632]"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="button button-dark text-xs py-3.5 px-8 flex items-center justify-center gap-2"
+                    >
+                      {isSubmitting ? "Sending Message..." : "Send Message"} <ArrowRight size={15} />
+                    </button>
+
+                    {submitError && (
+                      <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                        {submitError}
+                      </p>
+                    )}
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
+      <Footer />
     </>
   );
 }
@@ -235,50 +362,20 @@ function ContactDetail({
   href?: string;
 }) {
   return (
-    <div className="flex gap-4">
-      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#D6A64B]/15 text-[#9B7027]">
+    <div className="flex gap-4 items-start">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D6A64B]/15 text-[#9B7027]">
         {icon}
       </div>
       <div>
-        <p className="mb-1 text-sm font-semibold">{title}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-[#32190D]">{title}</p>
         {href ? (
-          <a href={href} className="text-sm text-[#6F5A4B] hover:text-[#B88632]">
+          <a href={href} className="text-xs text-[#6F5A4B] hover:text-[#B88632] transition-colors">
             {value}
           </a>
         ) : (
-          <p className="text-sm text-[#6F5A4B]">{value}</p>
+          <p className="text-xs text-[#6F5A4B]">{value}</p>
         )}
       </div>
-    </div>
-  );
-}
-
-function FormField({
-  label,
-  name,
-  placeholder,
-  type = "text",
-  required = false,
-}: {
-  label: string;
-  name: string;
-  placeholder: string;
-  type?: string;
-  required?: boolean;
-}) {
-  return (
-    <div>
-      <label htmlFor={name} className="mb-2 block text-sm font-semibold">
-        {label}
-      </label>
-      <input
-        id={name}
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        required={required}
-        className="w-full rounded-xl border border-[#32190D]/15 bg-transparent px-4 py-4 text-sm outline-none transition placeholder:text-[#9A897D] focus:border-[#B88632]"
-      />
     </div>
   );
 }

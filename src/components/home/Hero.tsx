@@ -1,4 +1,5 @@
-import { ArrowRight, ArrowUpRight, CakeSlice, Heart, Star } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight, Heart, Star } from "lucide-react";
 import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 
 export default function Hero() {
@@ -16,8 +17,8 @@ export default function Hero() {
             Made with passion, finished with a touch of luxury.
           </p>
           <div className="hero-actions">
-            <a className="button button-dark" href="#menu">Discover our menu <ArrowUpRight size={16} /></a>
-            <a className="text-link" href="#story">Our story <ArrowRight size={16} /></a>
+            <Link className="button button-dark" href="/menu">Discover our menu <ArrowUpRight size={16} /></Link>
+            <Link className="text-link" href="/about">Our story <ArrowRight size={16} /></Link>
           </div>
           <div className="hero-footnote">
             <span className="hero-footnote-icon"><Star size={15} /></span>
@@ -31,6 +32,8 @@ export default function Hero() {
         <div className="hero-visual-wrap">
           <div className="hero-image-frame">
             <ImagePlaceholder
+              src="/hero-image.jpg"
+              alt="KRUMBISTRY Signature Artisanal Cake"
               label="Your signature cake photography"
               className="hero-image"
               number="KRUMBISTRY · SIGNATURE"

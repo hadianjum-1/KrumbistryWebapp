@@ -7,8 +7,8 @@ export default function Testimonials() {
       <div className="site-container testimonial-grid">
         <div className="testimonial-intro">
           <SectionEyebrow>KIND WORDS</SectionEyebrow>
-          <h2>Don't just take<br />our <em>word for it.</em></h2>
-          <p>We love being part of your sweetest moments. Here's what our customers have to say.</p>
+          <h2>Don&apos;t just take<br />our <em>word for it.</em></h2>
+          <p>We love being part of your sweetest moments. Here&apos;s what our customers have to say.</p>
           <div className="testimonial-controls">
             <button aria-label="Previous testimonial" disabled><ChevronLeft /></button>
             <button aria-label="Next testimonial" disabled><ChevronRight /></button>

@@ -1,9 +1,9 @@
 export const navigation = [
-  { label: "Home", href: "#home" },
-  { label: "Our Story", href: "#story" },
-  { label: "Menu", href: "#menu" },
-  { label: "Custom Orders", href: "#custom-orders" },
-  { label: "Contact", href: "#contact" },
+  { label: "Home", href: "/" },
+  { label: "About", href: "/about" },
+  { label: "Menu", href: "/menu" },
+  { label: "Custom Orders", href: "/custom-orders" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export const categories = [
