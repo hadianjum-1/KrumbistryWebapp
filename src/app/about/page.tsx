@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -15,7 +16,6 @@ import {
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
-import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 import SectionEyebrow from "@/components/ui/SectionEyebrow";
 
 export const metadata: Metadata = {
@@ -61,11 +61,15 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-20 items-center">
               <div className="relative">
                 <div className="p-3 border border-[#D6A64B]/50 rounded-sm bg-[#FAF6EE]">
-                  <ImagePlaceholder
-                    label="Artisanal pastry chef tempering chocolate"
-                    className="h-[460px] bg-gradient-to-br from-[#E6D4BE] to-[#AF875B]"
-                    number="KRUMBISTRY KITCHEN"
-                  />
+                  <div className="relative h-[460px] overflow-hidden rounded-sm">
+                    <Image
+                      src="/about-images/about-kitchen.jpg"
+                      alt="Pastry chef tempering chocolate in the KRUMBISTRY kitchen"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
+                    />
+                  </div>
                 </div>
                 <div className="absolute -bottom-6 -right-6 w-32 h-32 rounded-full bg-[#32190D] text-[#F8F3E9] border-2 border-[#D6A64B] flex flex-col items-center justify-center p-3 text-center shadow-xl">
                   <span className="font-serif text-2xl font-bold text-[#D6A64B]">100%</span>
@@ -215,26 +219,33 @@ export default function AboutPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <ImagePlaceholder
-                  label="Layered celebration cake finishing"
-                  className="h-64 bg-gradient-to-br from-[#E2D2BC] to-[#B98F65]"
-                  number="STEP 01"
-                />
-                <ImagePlaceholder
-                  label="Hand-piped buttercream flowers"
-                  className="h-64 bg-gradient-to-br from-[#F0D5CA] to-[#C08C7F]"
-                  number="STEP 02"
-                />
-                <ImagePlaceholder
-                  label="Freshly baked artisan croissants"
-                  className="h-64 bg-gradient-to-br from-[#EEDDC4] to-[#C5A376]"
-                  number="STEP 03"
-                />
-                <ImagePlaceholder
-                  label="Gold leaf applied to dark chocolate cake"
-                  className="h-64 bg-gradient-to-br from-[#DBC7AB] to-[#885F3B]"
-                  number="STEP 04"
-                />
+                <div className="relative h-64 overflow-hidden rounded-sm">
+                  <Image
+                    src="/about-images/atelier-cake.jpg"
+                    alt="Pastry chef finishing a layered cake"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative h-64 overflow-hidden rounded-sm">
+                  <Image
+                    src="/about-images/atelier-buttercream.jpg"
+                    alt="Pastry chef piping buttercream flowers"
+                    fill
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="relative col-span-2 h-64 overflow-hidden rounded-sm">
+                  <Image
+                    src="/about-images/atelier-croissants.jpg"
+                    alt="Freshly baked artisan croissants"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -271,4 +282,3 @@ export default function AboutPage() {
     </>
   );
 }
-

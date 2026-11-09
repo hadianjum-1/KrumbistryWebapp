@@ -233,13 +233,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .instagram-section { padding-top: 80px; }
 .instagram-handle { display: inline-flex; align-items: center; gap: 8px; margin-top: 15px; color: #987238; font-size: 12px; }
 .instagram-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 42px; }
-.instagram-tile { position: relative; }
-.instagram-tile .image-placeholder { height: 190px; }
-.gallery-one { background: linear-gradient(145deg,#e6d0b8,#a97d5c); }
-.gallery-two { background: linear-gradient(145deg,#f0d8d0,#b98273); }
-.gallery-three { background: linear-gradient(145deg,#dfc9a9,#8d6845); }
-.gallery-four { background: linear-gradient(145deg,#e9dfcb,#bca17c); }
-.gallery-five { background: linear-gradient(145deg,#d8b8a5,#8d5b48); }
+.instagram-tile { position: relative; height: 190px; overflow: hidden; }
 .instagram-overlay { position: absolute; inset: 0; display: grid; place-items: center; color: white; background: rgba(50,25,13,.4); opacity: 0; transition: opacity .2s; }
 .instagram-tile:hover .instagram-overlay { opacity: 1; }
 .site-footer { padding: 75px 0 20px; background: #26140c; color: #f8f3e9; }
@@ -325,7 +319,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .testimonial-card { padding: 42px 25px; }
   .testimonial-card blockquote { font-size: 21px; }
   .instagram-grid { grid-template-columns: repeat(2, 1fr); gap: 9px; }
-  .instagram-tile .image-placeholder { height: 170px; }
+  .instagram-tile { height: 170px; }
   .instagram-tile:last-child { display: none; }
   .footer-main { grid-template-columns: repeat(2, 1fr); gap: 35px 22px; }
   .footer-brand, .footer-newsletter { grid-column: 1 / -1; }
