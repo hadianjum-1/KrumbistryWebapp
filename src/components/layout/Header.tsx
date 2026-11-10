@@ -67,22 +67,24 @@ export default function Header() {
         <div className="site-container header-inner">
           <Link
             href="/"
-            className="brand-lockup"
+            className="brand-lockup font-heading text-3xl tracking-wider"
             aria-label="KRUMBISTRY home"
             onClick={() => setIsMenuOpen(false)}
           >
-            <Image
-              src="/logo.png"
+            {/* <Image
+              src="/krumbistry-logo-transparent.png"
               alt="KRUMBISTRY Bake Shop"
-              width={100}
-              height={65}
+              width={55}
+              height={45}
               priority
-              className="brand-logo"
+              className="brand-logo bg-[#32190D] rounded-full p-[8px] "
               style={{ width: "auto", height: "auto" }}
-            />
+            /> */}
+
+            KRUMBISTRY
           </Link>
 
-          <nav className="desktop-nav" aria-label="Main navigation">
+          <nav className="desktop-nav " aria-label="Main navigation">
             {navigation.map((item) => {
               const isActive =
                 item.href === "/"
@@ -91,7 +93,7 @@ export default function Header() {
 
               return (
                 <Link
-                  className={isActive ? "active" : ""}
+                  className={`${isActive ? "active" : ""} text-[19px] `}
                   href={item.href}
                   key={item.label}
                 >
