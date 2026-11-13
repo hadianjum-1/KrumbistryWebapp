@@ -14,7 +14,8 @@ export const siteSettings: SiteSettings = {
   freeDeliveryThreshold: 4000,
   minimumOrderAmount: 800,
   instagramUrl: "https://instagram.com/krumbistry",
-  facebookUrl: "https://facebook.com/krumbistry",
+  facebookUrl: "https://www.facebook.com/your-page",
+tiktokUrl: "https://www.tiktok.com/@your-account",
   announcementText: "A little sweetness, delivered with love.",
   announcementSubtext: "HANDCRAFTED WITH PASSION · BAKED FRESH DAILY",
 };

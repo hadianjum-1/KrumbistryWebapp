@@ -13,6 +13,8 @@ import {
   Phone,
   Truck,
 } from "lucide-react";
+
+import { FaTiktok, FaFacebookF } from "react-icons/fa";
 import InstagramIcon from "@/components/ui/InstagramIcon";
 
 import { siteSettings } from "@/config/site";
@@ -76,25 +78,46 @@ export default function Footer() {
             </Link>
             <p>Thoughtfully made treats for life&apos;s sweetest moments.</p>
             <div className="footer-socials">
-              <a
-                className="footer-social"
-                href={siteSettings.instagramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Follow on Instagram"
-              >
-                <InstagramIcon size={16} /> Instagram
-              </a>
-              <a
-                className="footer-social"
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Chat on WhatsApp"
-              >
-                <MessageCircle size={16} /> WhatsApp
-              </a>
-            </div>
+  <a
+    className="footer-social"
+    href={siteSettings.instagramUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Follow on Instagram"
+  >
+    <InstagramIcon size={16} /> Instagram
+  </a>
+
+  <a
+    className="footer-social"
+    href={siteSettings.facebookUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Follow on Facebook"
+  >
+    <FaFacebookF size={16} /> Facebook
+  </a>
+
+  <a
+    className="footer-social"
+    href={siteSettings.tiktokUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Follow on TikTok"
+  >
+    <FaTiktok size={16} /> TikTok
+  </a>
+
+  <a
+    className="footer-social"
+    href={whatsappUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Chat on WhatsApp"
+  >
+    <MessageCircle size={16} /> WhatsApp
+  </a>
+</div>
           </div>
 
           {/* Explore Links */}

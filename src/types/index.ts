@@ -61,6 +61,7 @@ export interface SiteSettings {
   minimumOrderAmount: number;
   instagramUrl: string;
   facebookUrl?: string;
+  tiktokUrl:string;
   announcementText: string;
   announcementSubtext: string;
 }

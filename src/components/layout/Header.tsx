@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { FaTiktok, FaFacebookF } from "react-icons/fa";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -43,22 +44,44 @@ export default function Header() {
           </span>
 
           <div className="announcement-socials">
-            <a
-              href={siteSettings.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Instagram"
-            >
-              <InstagramIcon size={14} />
-            </a>
-            <a
+           <a
+               className="footer-social"
+               href={siteSettings.instagramUrl}
+               target="_blank"
+               rel="noopener noreferrer"
+               aria-label="Follow on Instagram"
+             >
+               <InstagramIcon size={16} /> Instagram
+             </a>
+           
+            {/* <a
               href={generalWhatsAppUrl}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="WhatsApp Us"
             >
               <MessageCircle size={14} />
-            </a>
+            </a> */}
+
+            <a
+                className="footer-social"
+                href={siteSettings.facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Follow on Facebook"
+              >
+                <FaFacebookF size={16} /> Facebook
+              </a>
+            
+              <a
+                className="footer-social"
+                href={siteSettings.tiktokUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Follow on TikTok"
+              >
+                <FaTiktok size={16} /> TikTok
+              </a>
           </div>
         </div>
       </div>
