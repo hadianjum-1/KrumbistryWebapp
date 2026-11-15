@@ -17,10 +17,15 @@ import {
   ArrowLeft,
   RefreshCw,
 } from "lucide-react";
+import { SITE_MODE } from "@/config/site-mode";
+import AdminLocked from "@/components/AdminLocked";
 
 type AuthMode = "login" | "forgot_request" | "forgot_verify";
 
 export default function AdminLoginPage() {
+  if (SITE_MODE.adminLocked) {
+    return <AdminLocked />;
+  }
   const router = useRouter();
 
   // Mode state
@@ -34,7 +39,9 @@ export default function AdminLoginPage() {
 
   // Lockout state
   const [isLocked, setIsLocked] = useState(false);
-  const [lockRemainingMinutes, setLockRemainingMinutes] = useState<number | null>(null);
+  const [lockRemainingMinutes, setLockRemainingMinutes] = useState<
+    number | null
+  >(null);
 
   // Forgot password state
   const [resetEmail, setResetEmail] = useState("admin@krumbistry.com");
@@ -102,7 +109,8 @@ export default function AdminLoginPage() {
       setResetSuccess(data.message);
       setMode("forgot_verify");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Could not send verification code";
+      const msg =
+        err instanceof Error ? err.message : "Could not send verification code";
       setResetError(msg);
     } finally {
       setResetLoading(false);
@@ -145,7 +153,9 @@ export default function AdminLoginPage() {
       // Reset state and transition back to login
       setIsLocked(false);
       setPassword("");
-      setResetSuccess("Password successfully updated and account unlocked! You can now log in.");
+      setResetSuccess(
+        "Password successfully updated and account unlocked! You can now log in.",
+      );
       setMode("login");
       setEmail(resetEmail);
     } catch (err: unknown) {
@@ -198,11 +208,17 @@ export default function AdminLoginPage() {
               {isLocked && (
                 <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-900 animate-in fade-in space-y-2">
                   <div className="flex items-start gap-2.5">
-                    <ShieldAlert size={18} className="shrink-0 text-amber-600 mt-0.5" />
+                    <ShieldAlert
+                      size={18}
+                      className="shrink-0 text-amber-600 mt-0.5"
+                    />
                     <div>
-                      <p className="font-bold text-sm text-amber-950">Account Temporarily Locked</p>
+                      <p className="font-bold text-sm text-amber-950">
+                        Account Temporarily Locked
+                      </p>
                       <p className="mt-0.5 text-amber-800 leading-relaxed">
-                        Too many incorrect password attempts (3 failed tries). For security, this account is locked for{" "}
+                        Too many incorrect password attempts (3 failed tries).
+                        For security, this account is locked for{" "}
                         <strong>{lockRemainingMinutes || 5} minutes</strong>.
                       </p>
                     </div>
@@ -227,10 +243,15 @@ export default function AdminLoginPage() {
               {/* General Login Error */}
               {errorMessage && !isLocked && (
                 <div className="mb-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50/90 p-4 text-sm text-red-800 animate-in fade-in">
-                  <AlertCircle size={18} className="shrink-0 mt-0.5 text-red-600" />
+                  <AlertCircle
+                    size={18}
+                    className="shrink-0 mt-0.5 text-red-600"
+                  />
                   <div>
                     <p className="font-medium">Authentication Failed</p>
-                    <p className="text-xs text-red-700 mt-0.5">{errorMessage}</p>
+                    <p className="text-xs text-red-700 mt-0.5">
+                      {errorMessage}
+                    </p>
                   </div>
                 </div>
               )}
@@ -238,7 +259,10 @@ export default function AdminLoginPage() {
               {/* Password Reset Success Alert */}
               {resetSuccess && (
                 <div className="mb-6 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50/90 p-4 text-sm text-emerald-800 animate-in fade-in">
-                  <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-emerald-600" />
+                  <CheckCircle2
+                    size={18}
+                    className="shrink-0 mt-0.5 text-emerald-600"
+                  />
                   <div>
                     <p className="font-semibold text-xs">{resetSuccess}</p>
                   </div>
@@ -262,9 +286,9 @@ export default function AdminLoginPage() {
                       type="email"
                       required
                       autoComplete="email"
-                      value={email}
+                      
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="admin@krumbistry.com"
+                      placeholder="Email Address"
                       className="w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 pl-10 pr-4 py-2.5 text-sm text-[#32190D] placeholder:text-[#32190D]/40 focus:border-[#D6A64B] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D6A64B]/20 transition-colors"
                     />
                   </div>
@@ -316,7 +340,10 @@ export default function AdminLoginPage() {
                   >
                     {isLoading ? (
                       <>
-                        <Loader2 size={16} className="animate-spin text-[#D6A64B]" />
+                        <Loader2
+                          size={16}
+                          className="animate-spin text-[#D6A64B]"
+                        />
                         <span>Verifying Credentials...</span>
                       </>
                     ) : (
@@ -330,17 +357,19 @@ export default function AdminLoginPage() {
               </form>
 
               {/* Quick Demo Credentials Info Box */}
-              <div className="mt-8 pt-6 border-t border-[#32190D]/10">
+              {/* <div className="mt-8 pt-6 border-t border-[#32190D]/10">
                 <div className="rounded-xl bg-[#F8F3E9] p-4 text-xs text-[#32190D]/80 space-y-1.5 border border-[#D6A64B]/30">
                   <div className="flex items-center gap-1.5 font-semibold text-[#32190D]">
                     <ShieldCheck size={14} className="text-[#D6A64B]" />
                     <span>Admin Security Standard</span>
                   </div>
                   <p className="text-[11px] text-[#705F52]">
-                    Accounts auto-lock for 5 minutes upon 3 failed attempts. Reset verification codes are dispatched to <strong>admin@krumbistry.com</strong>.
+                    Accounts auto-lock for 5 minutes upon 3 failed attempts.
+                    Reset verification codes are dispatched to{" "}
+                    <strong>admin@krumbistry.com</strong>.
                   </p>
                 </div>
-              </div>
+              </div> */}
             </>
           )}
 
@@ -365,13 +394,17 @@ export default function AdminLoginPage() {
                   Reset Administrator Password
                 </h2>
                 <p className="text-xs text-[#806E5D] mt-1 leading-relaxed">
-                  Enter your administrator email below. We will send a secure 6-digit one-time code to authorize resetting your credentials.
+                  Enter your administrator email below. We will send a secure
+                  6-digit one-time code to authorize resetting your credentials.
                 </p>
               </div>
 
               {resetError && (
                 <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+                  <AlertCircle
+                    size={16}
+                    className="shrink-0 mt-0.5 text-red-600"
+                  />
                   <span>{resetError}</span>
                 </div>
               )}
@@ -407,7 +440,10 @@ export default function AdminLoginPage() {
                 >
                   {resetLoading ? (
                     <>
-                      <Loader2 size={16} className="animate-spin text-[#D6A64B]" />
+                      <Loader2
+                        size={16}
+                        className="animate-spin text-[#D6A64B]"
+                      />
                       <span>Sending Code...</span>
                     </>
                   ) : (
@@ -439,20 +475,27 @@ export default function AdminLoginPage() {
                   Enter Verification Code
                 </h2>
                 <p className="text-xs text-[#806E5D] mt-1 leading-relaxed">
-                  A 6-digit code was dispatched to <strong>{resetEmail}</strong> (expires in 10 minutes).
+                  A 6-digit code was dispatched to <strong>{resetEmail}</strong>{" "}
+                  (expires in 10 minutes).
                 </p>
               </div>
 
               {resetError && (
                 <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5 text-red-600" />
+                  <AlertCircle
+                    size={16}
+                    className="shrink-0 mt-0.5 text-red-600"
+                  />
                   <span>{resetError}</span>
                 </div>
               )}
 
               {resetSuccess && (
                 <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900">
-                  <CheckCircle2 size={16} className="shrink-0 mt-0.5 text-amber-600" />
+                  <CheckCircle2
+                    size={16}
+                    className="shrink-0 mt-0.5 text-amber-600"
+                  />
                   <span>{resetSuccess}</span>
                 </div>
               )}
@@ -471,7 +514,9 @@ export default function AdminLoginPage() {
                     required
                     maxLength={6}
                     value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) =>
+                      setResetCode(e.target.value.replace(/\D/g, ""))
+                    }
                     placeholder="123456"
                     className="mt-2 w-full text-center font-mono text-xl tracking-[0.4em] font-bold rounded-lg border border-[#32190D]/20 bg-[#F8F3E9]/50 py-3 text-[#32190D] focus:border-[#D6A64B] focus:bg-white focus:outline-none"
                   />
@@ -522,7 +567,10 @@ export default function AdminLoginPage() {
                 >
                   {resetLoading ? (
                     <>
-                      <Loader2 size={16} className="animate-spin text-[#D6A64B]" />
+                      <Loader2
+                        size={16}
+                        className="animate-spin text-[#D6A64B]"
+                      />
                       <span>Updating Credentials...</span>
                     </>
                   ) : (

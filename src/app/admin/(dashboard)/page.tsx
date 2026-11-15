@@ -16,6 +16,8 @@ import {
   Calendar,
   Filter,
 } from "lucide-react";
+import { SITE_MODE } from "@/config/site-mode";
+import AdminLocked from "@/components/AdminLocked";
 
 interface DashboardData {
   products: {
@@ -82,6 +84,9 @@ interface DashboardData {
 }
 
 export default function AdminDashboardPage() {
+  if (SITE_MODE.adminLocked) {
+    return <AdminLocked />;
+  }
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -217,8 +222,8 @@ export default function AdminDashboardPage() {
             href="/admin/products/new"
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#32190D] px-4 py-2 text-xs font-semibold text-white hover:bg-[#432314] transition-colors shadow-sm cursor-pointer"
           >
-            <Plus size={15} className="text-[#D6A64B]" />
-            <span>Add Product</span>
+            <Plus size={15} className="text-[#ffffff]" />
+            <span className="text-[#ffffff]">Add Product</span>
           </Link>
         </div>
       </div>

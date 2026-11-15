@@ -37,7 +37,9 @@ export default function CartDrawer() {
   } = useCart();
 
   // Mode: "bag" | "checkout" | "success"
-  const [viewMode, setViewMode] = useState<"bag" | "checkout" | "success">("bag");
+  const [viewMode, setViewMode] = useState<"bag" | "checkout" | "success">(
+    "bag",
+  );
 
   // Checkout form state
   const [customerName, setCustomerName] = useState("");
@@ -69,7 +71,7 @@ export default function CartDrawer() {
       subtotal,
       deliveryFee,
       customerName,
-      deliveryAddress
+      deliveryAddress,
     );
     window.open(url, "_blank");
   };
@@ -78,8 +80,15 @@ export default function CartDrawer() {
     e.preventDefault();
     setOrderError(null);
 
-    if (!customerName.trim() || !customerEmail.trim() || !customerPhone.trim() || !deliveryAddress.trim()) {
-      setOrderError("Please complete your name, email, phone number, and delivery address.");
+    if (
+      !customerName.trim() ||
+      !customerEmail.trim() ||
+      !customerPhone.trim() ||
+      !deliveryAddress.trim()
+    ) {
+      setOrderError(
+        "Please complete your name, email, phone number, and delivery address.",
+      );
       return;
     }
 
@@ -108,7 +117,9 @@ export default function CartDrawer() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Failed to place your order. Please try again.");
+        throw new Error(
+          data.error || "Failed to place your order. Please try again.",
+        );
       }
 
       setCompletedOrder({
@@ -118,7 +129,8 @@ export default function CartDrawer() {
       clearCart();
       setViewMode("success");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Order processing failed.";
+      const msg =
+        err instanceof Error ? err.message : "Order processing failed.";
       setOrderError(msg);
     } finally {
       setIsSubmitting(false);
@@ -166,8 +178,8 @@ export default function CartDrawer() {
                   {viewMode === "success"
                     ? "Order Confirmed"
                     : viewMode === "checkout"
-                    ? "Delivery Details"
-                    : "Your Bag"}
+                      ? "Delivery Details"
+                      : "Your Bag"}
                 </h2>
                 <p className="text-xs text-[#806E5D] mt-1">
                   {viewMode === "success"
@@ -200,7 +212,8 @@ export default function CartDrawer() {
                   Luxury In Every Bite
                 </h3>
                 <p className="text-xs text-[#32190D]/70 mt-2 max-w-xs mx-auto">
-                  Your order has been registered and our chefs are reviewing your artisanal treats.
+                  Your order has been registered and our chefs are reviewing
+                  your artisanal treats.
                 </p>
               </div>
 
@@ -215,7 +228,8 @@ export default function CartDrawer() {
                     {completedOrder.orderNumber}
                   </span>
                   <span className="font-mono font-bold text-base text-[#8C6219]">
-                    {siteSettings.currencySymbol} {completedOrder.total.toLocaleString()}
+                    {siteSettings.currencySymbol}{" "}
+                    {completedOrder.total.toLocaleString()}
                   </span>
                 </div>
                 <button
@@ -224,14 +238,16 @@ export default function CartDrawer() {
                   className="w-full mt-2 inline-flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-[#F8F3E9] text-[11px] font-semibold text-[#32190D] hover:bg-[#F1EADD] transition-colors cursor-pointer"
                 >
                   <Copy size={13} className="text-[#D6A64B]" />
-                  <span>{copied ? "Copied to Clipboard!" : "Copy Reference #"}</span>
+                  <span>
+                    {copied ? "Copied to Clipboard!" : "Copy Reference #"}
+                  </span>
                 </button>
               </div>
 
               <div className="space-y-2 w-full pt-2">
                 <a
                   href={`https://wa.me/${siteSettings.whatsappNumber}?text=${encodeURIComponent(
-                    `Hello KRUMBISTRY, I just placed order #${completedOrder.orderNumber} for Rs. ${completedOrder.total}.`
+                    `Hello KRUMBISTRY, I just placed order #${completedOrder.orderNumber} for Rs. ${completedOrder.total}.`,
                   )}`}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -270,12 +286,18 @@ export default function CartDrawer() {
 
               {orderError && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-800 flex items-start gap-2">
-                  <AlertCircle size={15} className="text-red-600 shrink-0 mt-0.5" />
+                  <AlertCircle
+                    size={15}
+                    className="text-red-600 shrink-0 mt-0.5"
+                  />
                   <span>{orderError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleOnlineOrderSubmit} className="space-y-3.5 text-xs">
+              <form
+                onSubmit={handleOnlineOrderSubmit}
+                className="space-y-3.5 text-xs"
+              >
                 <div>
                   <label className="block text-[11px] font-semibold uppercase tracking-wider text-[#32190D] mb-1">
                     Full Name *
@@ -353,12 +375,18 @@ export default function CartDrawer() {
                   >
                     {isSubmitting ? (
                       <>
-                        <Loader2 size={15} className="animate-spin text-[#D6A64B]" />
+                        <Loader2
+                          size={15}
+                          className="animate-spin text-[#D6A64B]"
+                        />
                         <span>Processing Artisanal Order...</span>
                       </>
                     ) : (
                       <>
-                        <span>Confirm & Place Order ({siteSettings.currencySymbol} {total.toLocaleString()})</span>
+                        <span>
+                          Confirm & Place Order ({siteSettings.currencySymbol}{" "}
+                          {total.toLocaleString()})
+                        </span>
                         <ArrowRight size={14} className="text-[#D6A64B]" />
                       </>
                     )}
@@ -383,7 +411,8 @@ export default function CartDrawer() {
                       <>
                         Add{" "}
                         <strong className="text-[#32190D]">
-                          {siteSettings.currencySymbol} {freeDeliveryDiff.toLocaleString()}
+                          {siteSettings.currencySymbol}{" "}
+                          {freeDeliveryDiff.toLocaleString()}
                         </strong>{" "}
                         more for complimentary delivery
                       </>
@@ -407,22 +436,27 @@ export default function CartDrawer() {
                       Your bag is empty
                     </h3>
                     <p className="text-xs text-[#806E5D] max-w-xs mt-1.5 mb-6">
-                      Discover our handcrafted cakes, brownies, and pastries baked fresh each morning.
+                      Discover our handcrafted cakes, brownies, and pastries
+                      baked fresh each morning.
                     </p>
                     <Link
                       href="/menu"
                       onClick={closeCart}
                       className="inline-flex items-center gap-2 rounded-lg bg-[#32190D] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#432314] transition-colors"
                     >
-                      <span>Explore Bakery Menu</span>
+                      <span className=" text-white">Explore Bakery Menu</span>
                       <ArrowRight size={13} className="text-[#D6A64B]" />
                     </Link>
                   </div>
                 ) : (
                   items.map((item) => {
-                    const itemPrice = item.product.salePrice ?? item.product.price;
+                    const itemPrice =
+                      item.product.salePrice ?? item.product.price;
                     return (
-                      <div key={item.product.id} className="py-4 flex gap-4 items-start">
+                      <div
+                        key={item.product.id}
+                        className="py-4 flex gap-4 items-start"
+                      >
                         {/* Thumbnail */}
                         <div className="w-16 h-16 rounded-lg overflow-hidden bg-[#FAF6EE] border border-[#32190D]/10 shrink-0">
                           <ImagePlaceholder
@@ -448,7 +482,8 @@ export default function CartDrawer() {
                           </div>
 
                           <div className="text-xs text-[#806E5D] mt-0.5 font-mono">
-                            {siteSettings.currencySymbol} {itemPrice.toLocaleString()}
+                            {siteSettings.currencySymbol}{" "}
+                            {itemPrice.toLocaleString()}
                           </div>
 
                           {item.notes && (
@@ -462,7 +497,10 @@ export default function CartDrawer() {
                             <div className="flex items-center border border-[#32190D]/15 rounded bg-white">
                               <button
                                 onClick={() =>
-                                  updateQuantity(item.product.id, item.quantity - 1)
+                                  updateQuantity(
+                                    item.product.id,
+                                    item.quantity - 1,
+                                  )
                                 }
                                 aria-label="Decrease quantity"
                                 className="w-6 h-6 grid place-items-center hover:bg-[#FAF6EE] text-[#32190D] cursor-pointer"
@@ -474,7 +512,10 @@ export default function CartDrawer() {
                               </span>
                               <button
                                 onClick={() =>
-                                  updateQuantity(item.product.id, item.quantity + 1)
+                                  updateQuantity(
+                                    item.product.id,
+                                    item.quantity + 1,
+                                  )
                                 }
                                 aria-label="Increase quantity"
                                 className="w-6 h-6 grid place-items-center hover:bg-[#FAF6EE] text-[#32190D] cursor-pointer"
@@ -503,14 +544,17 @@ export default function CartDrawer() {
                     <div className="flex justify-between text-[#806E5D]">
                       <span>Subtotal</span>
                       <span className="font-mono">
-                        {siteSettings.currencySymbol} {subtotal.toLocaleString()}
+                        {siteSettings.currencySymbol}{" "}
+                        {subtotal.toLocaleString()}
                       </span>
                     </div>
                     <div className="flex justify-between text-[#806E5D]">
                       <span>Estimated Delivery</span>
                       <span className="font-mono">
                         {deliveryFee === 0 ? (
-                          <span className="text-emerald-700 font-semibold">FREE</span>
+                          <span className="text-emerald-700 font-semibold">
+                            FREE
+                          </span>
                         ) : (
                           `${siteSettings.currencySymbol} ${deliveryFee.toLocaleString()}`
                         )}

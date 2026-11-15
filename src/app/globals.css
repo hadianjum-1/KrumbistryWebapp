@@ -1635,3 +1635,47 @@ a {
     max-width: 240px;
   }
 }
+
+.testimonial-card {
+  animation: testimonialFade 0.45s ease both;
+}
+
+@keyframes testimonialFade {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.testimonial-controls button {
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.testimonial-controls button:hover {
+  background: var(--color-foreground);
+  color: var(--color-background);
+}
+
+.testimonial-controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.testimonial-progress {
+  flex: 1;
+  height: 2px;
+  background: rgba(50, 25, 13, 0.15);
+  overflow: hidden;
+}
+
+.testimonial-progress > div {
+  height: 100%;
+  background: #d6a64b;
+  transition: width 0.4s ease;
+}

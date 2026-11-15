@@ -148,8 +148,8 @@ export default function ContactPage() {
                   rel="noreferrer"
                   className="inline-flex items-center gap-3 rounded-full bg-[#32190D] px-7 py-4 text-xs font-bold text-white transition hover:bg-[#4A2918]"
                 >
-                  <MessageCircle size={18} />
-                  Chat on WhatsApp Directly
+                  <MessageCircle size={18}  className="text-white"/>
+                  <span className="text-white">Chat on WhatsApp Directly</span>
                   <ArrowUpRight size={16} />
                 </a>
 

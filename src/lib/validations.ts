@@ -81,6 +81,30 @@ export const createOrderSchema = z.object({
   ),
 });
 
+// Product review validation schema
+export const reviewSchema = z.object({
+  customerName: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim() : val),
+    z.string().min(1, "Please provide your name").max(100)
+  ),
+  customerEmail: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim().toLowerCase() : val),
+    z.string().email("Please provide a valid email address")
+  ),
+  rating: z.preprocess((val) => {
+    const num = Number(val);
+    return Number.isFinite(num) ? num : NaN;
+  }, z.number().int().min(1, "Rating must be at least 1").max(5, "Rating must be 5 or less")),
+  comment: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim() : val),
+    z.string().min(15, "Review must be at least 15 characters").max(1500, "Review is too long")
+  ),
+  status: z.preprocess(
+    (val) => (typeof val === "string" ? val.trim().toUpperCase() : val),
+    z.enum(["PENDING", "APPROVED", "REJECTED"]).optional()
+  ).optional(),
+});
+
 // Newsletter subscription schema
 export const newsletterSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -246,4 +270,42 @@ export const updateInquiryStatusSchema = z.object({
 
 // Admin site settings schema
 export const updateSiteSettingsSchema = z.record(z.string(), z.string());
+
+// Customer feedback validation schema
+export const feedbackRatingEnum = z.enum([
+  "Excellent",
+  "Very Good",
+  "Good",
+  "Average",
+  "Needs Improvement",
+]);
+
+export type FeedbackRating = z.infer<typeof feedbackRatingEnum>;
+
+export const feedbackSchema = z.object({
+  overallExperience: feedbackRatingEnum,
+  foodQuality: feedbackRatingEnum,
+  serviceExperience: feedbackRatingEnum,
+  fullName: z
+    .string()
+    .trim()
+    .min(2, "Full name must be at least 2 characters")
+    .max(100, "Full name cannot exceed 100 characters"),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Please provide a valid email address")
+    .max(150, "Email cannot exceed 150 characters"),
+  comments: z
+    .string()
+    .trim()
+    .max(1000, "Comments cannot exceed 1,000 characters")
+    .optional()
+    .or(z.literal("")),
+  honeypot: z.string().optional().nullable(),
+});
+
+export type FeedbackInput = z.infer<typeof feedbackSchema>;
+
 

@@ -416,7 +416,7 @@ export default function AdminInquiriesPage() {
                 className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-[#32190D] py-2 px-3 text-xs font-semibold text-white hover:bg-[#432314] transition-colors"
               >
                 <Mail size={14} className="text-[#D6A64B]" />
-                <span>Reply by Email</span>
+                <span className="text-[#D6A64B]">Reply by Email</span>
               </a>
 
               {selectedInquiry.phone && (

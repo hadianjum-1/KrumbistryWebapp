@@ -578,3 +578,227 @@ export async function sendAdminPasswordResetConfirmationEmail({
   });
 }
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getRatingBadgeColor(rating: string): { bg: string; text: string; border: string } {
+  switch (rating) {
+    case "Excellent":
+      return { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0" };
+    case "Very Good":
+      return { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" };
+    case "Good":
+      return { bg: "#FEFCE8", text: "#854D0E", border: "#FEF08A" };
+    case "Average":
+      return { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A" };
+    case "Needs Improvement":
+      return { bg: "#FEF2F2", text: "#991B1B", border: "#FECACA" };
+    default:
+      return { bg: "#F8F3E9", text: "#32190D", border: "#D6A64B" };
+  }
+}
+
+/**
+ * 7. Customer Feedback & Review Form Notifications
+ */
+export async function sendFeedbackEmails(feedback: {
+  fullName: string;
+  email: string;
+  overallExperience: string;
+  foodQuality: string;
+  serviceExperience: string;
+  comments?: string | null;
+}): Promise<{ adminSent: boolean; customerSent: boolean }> {
+  const adminEmail =
+    process.env.ADMIN_NOTIFICATION_EMAIL ||
+    process.env.ADMIN_EMAIL ||
+    "orders@krumbistry.com";
+
+  const safeName = escapeHtml(feedback.fullName.trim());
+  const safeEmail = escapeHtml(feedback.email.trim());
+  const safeOverall = escapeHtml(feedback.overallExperience);
+  const safeFood = escapeHtml(feedback.foodQuality);
+  const safeService = escapeHtml(feedback.serviceExperience);
+  const safeComments = feedback.comments?.trim()
+    ? escapeHtml(feedback.comments.trim())
+    : "";
+
+  const submissionDate = new Date().toLocaleString("en-PK", {
+    timeZone: "Asia/Karachi",
+    dateStyle: "full",
+    timeStyle: "short",
+  });
+
+  const overallBadge = getRatingBadgeColor(feedback.overallExperience);
+  const foodBadge = getRatingBadgeColor(feedback.foodQuality);
+  const serviceBadge = getRatingBadgeColor(feedback.serviceExperience);
+
+  // 1. Admin Notification Email
+  const adminContent = `
+    <div style="margin-bottom: 24px;">
+      <span style="display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #8C6219; background-color: #F8F3E9; padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(214, 166, 75, 0.4);">
+        Customer Experience Report
+      </span>
+      <h2 style="font-family: Georgia, serif; font-size: 24px; color: #32190D; margin: 12px 0 6px 0; font-weight: 600;">
+        New Customer Feedback Received
+      </h2>
+      <p style="margin: 0; font-size: 13px; color: #7A6961;">
+        Submitted on <strong>${submissionDate}</strong> (PKT)
+      </p>
+    </div>
+
+    <!-- Customer Details Card -->
+    <div style="background-color: #FDFBF7; border: 1px solid rgba(50, 25, 13, 0.1); border-radius: 8px; padding: 18px 20px; margin-bottom: 24px;">
+      <h3 style="font-family: Georgia, serif; font-size: 15px; margin: 0 0 12px 0; color: #32190D; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
+        Customer Information
+      </h3>
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr>
+          <td style="padding: 6px 0; color: #7A6961; width: 140px; font-weight: 600;">Full Name:</td>
+          <td style="padding: 6px 0; color: #32190D; font-weight: bold;">${safeName}</td>
+        </tr>
+        <tr>
+          <td style="padding: 6px 0; color: #7A6961; font-weight: 600;">Email Address:</td>
+          <td style="padding: 6px 0; color: #32190D;">
+            <a href="mailto:${safeEmail}" style="color: #8C6219; text-decoration: underline;">${safeEmail}</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Ratings Breakdown -->
+    <div style="background-color: #ffffff; border: 1px solid rgba(50, 25, 13, 0.1); border-radius: 8px; padding: 18px 20px; margin-bottom: 24px;">
+      <h3 style="font-family: Georgia, serif; font-size: 15px; margin: 0 0 16px 0; color: #32190D; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">
+        Experience Ratings
+      </h3>
+      
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <tr style="border-bottom: 1px solid rgba(50, 25, 13, 0.08);">
+          <td style="padding: 12px 0; color: #32190D; font-weight: 500;">
+            <strong>1. Overall Experience</strong>
+            <div style="font-size: 12px; color: #7A6961;">Overall impression with KRUMBISTRY</div>
+          </td>
+          <td style="padding: 12px 0; text-align: right;">
+            <span style="display: inline-block; background-color: ${overallBadge.bg}; color: ${overallBadge.text}; border: 1px solid ${overallBadge.border}; padding: 4px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px;">
+              ${safeOverall}
+            </span>
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid rgba(50, 25, 13, 0.08);">
+          <td style="padding: 12px 0; color: #32190D; font-weight: 500;">
+            <strong>2. Food Quality &amp; Freshness</strong>
+            <div style="font-size: 12px; color: #7A6961;">Taste, texture, presentation, and freshness</div>
+          </td>
+          <td style="padding: 12px 0; text-align: right;">
+            <span style="display: inline-block; background-color: ${foodBadge.bg}; color: ${foodBadge.text}; border: 1px solid ${foodBadge.border}; padding: 4px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px;">
+              ${safeFood}
+            </span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 12px 0; color: #32190D; font-weight: 500;">
+            <strong>3. Ordering &amp; Customer Service</strong>
+            <div style="font-size: 12px; color: #7A6961;">Ease of order placement, staff care, and support</div>
+          </td>
+          <td style="padding: 12px 0; text-align: right;">
+            <span style="display: inline-block; background-color: ${serviceBadge.bg}; color: ${serviceBadge.text}; border: 1px solid ${serviceBadge.border}; padding: 4px 14px; border-radius: 9999px; font-weight: 700; font-size: 12px;">
+              ${safeService}
+            </span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Additional Comments -->
+    <div style="background-color: #F8F3E9; border-left: 4px solid #D6A64B; padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 24px;">
+      <h4 style="font-family: Georgia, serif; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #8C6219; margin: 0 0 8px 0;">
+        Customer Comments &amp; Suggestions
+      </h4>
+      <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #32190D; white-space: pre-wrap;">
+        ${safeComments ? safeComments : "<em style='color: #7A6961;'>No additional comments provided.</em>"}
+      </p>
+    </div>
+
+    <div style="text-align: center; margin-top: 24px;">
+      <a href="mailto:${safeEmail}?subject=Re:%20Your%20Feedback%20at%20KRUMBISTRY%20Bake%20Shop" style="display: inline-block; background-color: #32190D; color: #ffffff !important; text-decoration: none; font-size: 13px; font-weight: 600; padding: 12px 28px; border-radius: 6px; letter-spacing: 0.5px;">
+        Reply to Customer
+      </a>
+    </div>
+  `;
+
+  // 2. Customer Confirmation Email
+  const customerContent = `
+    <div style="margin-bottom: 20px;">
+      <h2 style="font-family: Georgia, serif; font-size: 24px; color: #32190D; margin: 0 0 8px 0; font-weight: 600;">
+        Thank You for Your Feedback
+      </h2>
+      <div style="width: 48px; height: 2px; background-color: #D6A64B; margin-bottom: 18px;"></div>
+    </div>
+
+    <p style="font-size: 15px; color: #32190D; margin-top: 0; line-height: 1.6;">
+      Hi ${safeName},
+    </p>
+
+    <p style="font-size: 14px; color: #32190D; line-height: 1.7;">
+      Thank you for taking the time to share your experience with KRUMBISTRY!
+    </p>
+
+    <p style="font-size: 14px; color: #32190D; line-height: 1.7;">
+      We&#039;ve successfully received your feedback. Your opinion matters to us, and we genuinely appreciate your suggestions.
+    </p>
+
+    <p style="font-size: 14px; color: #32190D; line-height: 1.7;">
+      We&#039;re always working to improve our food quality, freshness, ordering experience, and customer service.
+    </p>
+
+    <p style="font-size: 14px; color: #32190D; line-height: 1.7;">
+      If your feedback requires further attention, our team may contact you using the email address you provided.
+    </p>
+
+    <div style="background-color: #F8F3E9; border-left: 3px solid #D6A64B; padding: 14px 18px; margin: 24px 0; border-radius: 0 6px 6px 0;">
+      <p style="margin: 0; font-size: 12px; color: #8C6219; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+        Summary of Your Review
+      </p>
+      <p style="margin: 6px 0 0 0; font-size: 13px; color: #32190D;">
+        Overall Experience: <strong>${safeOverall}</strong> &nbsp;·&nbsp;
+        Food Quality: <strong>${safeFood}</strong> &nbsp;·&nbsp;
+        Service: <strong>${safeService}</strong>
+      </p>
+    </div>
+
+    <p style="font-size: 14px; color: #32190D; line-height: 1.7; margin-bottom: 4px;">
+      Thank you for choosing KRUMBISTRY.
+    </p>
+
+    <p style="font-size: 14px; color: #32190D; line-height: 1.6; margin: 16px 0 0 0;">
+      Warm regards,<br />
+      <strong>KRUMBISTRY Bake Shop</strong><br />
+      <span style="font-family: Georgia, serif; font-style: italic; color: #8C6219;">Luxury in Every Bite!</span>
+    </p>
+  `;
+
+  const [adminSent, customerSent] = await Promise.all([
+    sendEmail({
+      to: adminEmail,
+      subject: `New Customer Feedback – KRUMBISTRY`,
+      html: wrapHtmlEmail("New Customer Feedback – KRUMBISTRY", adminContent),
+      text: `New Customer Feedback – KRUMBISTRY\n\nCustomer: ${feedback.fullName} (${feedback.email})\nOverall Experience: ${feedback.overallExperience}\nFood Quality: ${feedback.foodQuality}\nCustomer Service: ${feedback.serviceExperience}\nComments: ${feedback.comments || "None"}\nDate: ${submissionDate}`,
+    }),
+    sendEmail({
+      to: feedback.email,
+      subject: `Thank You for Your Feedback – KRUMBISTRY`,
+      html: wrapHtmlEmail("Thank You for Your Feedback – KRUMBISTRY", customerContent),
+      text: `Hi ${feedback.fullName},\n\nThank you for taking the time to share your experience with KRUMBISTRY!\n\nWe've successfully received your feedback. Your opinion matters to us, and we genuinely appreciate your suggestions.\n\nWe're always working to improve our food quality, freshness, ordering experience, and customer service.\n\nIf your feedback requires further attention, our team may contact you using the email address you provided.\n\nThank you for choosing KRUMBISTRY.\n\nWarm regards,\nKRUMBISTRY Bake Shop\nLuxury in Every Bite!`,
+    }),
+  ]);
+
+  return { adminSent, customerSent };
+}
+
+

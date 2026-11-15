@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -11,6 +11,7 @@ import {
   ShoppingBag,
   Cake,
   MessageSquare,
+  MessageSquareText,
   Settings,
   ExternalLink,
   LogOut,
@@ -33,7 +34,7 @@ interface AdminLayoutShellProps {
   children: React.ReactNode;
 }
 
-const navItems = [
+const baseNavItems = [
   {
     label: "Overview",
     href: "/admin",
@@ -71,6 +72,12 @@ const navItems = [
     exact: false,
   },
   {
+    label: "Reviews",
+    href: "/admin/reviews",
+    icon: MessageSquareText,
+    exact: false,
+  },
+  {
     label: "Store Settings",
     href: "/admin/settings",
     icon: Settings,
@@ -78,11 +85,36 @@ const navItems = [
   },
 ];
 
-export default function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
+export default function AdminLayoutShell({
+  session,
+  children,
+}: AdminLayoutShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [pendingReviewCount, setPendingReviewCount] = useState(0);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchPendingReviews = async () => {
+      try {
+        const res = await fetch("/api/admin/reviews?summary=true");
+        const json = await res.json();
+        if (!ignore && json?.success) {
+          setPendingReviewCount(Number(json.data?.pendingCount || 0));
+        }
+      } catch (error) {
+        console.warn("Failed to load pending reviews badge", error);
+      }
+    };
+
+    fetchPendingReviews();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -198,9 +230,11 @@ export default function AdminLayoutShell({ session, children }: AdminLayoutShell
             Management Modules
           </div>
 
-          {navItems.map((item) => {
+          {baseNavItems.map((item) => {
             const active = isNavActive(item.href, item.exact);
             const Icon = item.icon;
+            const isReviewsItem = item.href === "/admin/reviews";
+            const badgeCount = isReviewsItem ? pendingReviewCount : 0;
 
             return (
               <Link
@@ -220,7 +254,16 @@ export default function AdminLayoutShell({ session, children }: AdminLayoutShell
                   />
                   <span>{item.label}</span>
                 </div>
-                {active && <ChevronRight size={16} className="text-[#1B0F08]/70" />}
+                <div className="flex items-center gap-2">
+                  {active && (
+                    <ChevronRight size={16} className="text-[#1B0F08]/70" />
+                  )}
+                  {isReviewsItem && badgeCount > 0 && (
+                    <span className="min-w-[1.3rem] rounded-full bg-[#D6A64B] px-1.5 py-0.5 text-[10px] font-bold text-[#1B0F08]">
+                      {badgeCount}
+                    </span>
+                  )}
+                </div>
               </Link>
             );
           })}
@@ -286,4 +329,3 @@ export default function AdminLayoutShell({ session, children }: AdminLayoutShell
     </div>
   );
 }
-

@@ -58,16 +58,22 @@ enum InquiryStatus {
   CLOSED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Admin {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   passwordHash String
   name         String
-  role         AdminRole  @default(SUPER_ADMIN)
-  active       Boolean    @default(true)
+  role         AdminRole @default(SUPER_ADMIN)
+  active       Boolean   @default(true)
   lastLoginAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([email])
 }
@@ -89,37 +95,56 @@ model Category {
 }
 
 model Product {
-  id              String      @id @default(cuid())
-  name            String
-  slug            String      @unique
+  id               String      @id @default(cuid())
+  name             String
+  slug             String      @unique
   shortDescription String
-  description     String      @db.Text
-  price           Decimal     @db.Decimal(10, 2)
-  salePrice       Decimal?    @db.Decimal(10, 2)
-  sku             String      @unique
-  categoryId      String
-  category        Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  mainImage       String
-  gallery         String[]    @default([])
-  ingredients     String[]    @default([])
-  allergens       String[]    @default([])
-  size            String?
-  weight          String?
-  servings        String?
-  preparationTime String?
-  featured        Boolean     @default(false)
-  bestseller      Boolean     @default(false)
-  available       Boolean     @default(true)
-  published       Boolean     @default(true)
-  sortOrder       Int         @default(0)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  orderItems      OrderItem[]
+  description      String      @db.Text
+  price            Decimal     @db.Decimal(10, 2)
+  salePrice        Decimal?    @db.Decimal(10, 2)
+  sku              String      @unique
+  categoryId       String
+  category         Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  mainImage        String
+  gallery          String[]    @default([])
+  ingredients      String[]    @default([])
+  allergens        String[]    @default([])
+  size             String?
+  weight           String?
+  servings         String?
+  preparationTime  String?
+  featured         Boolean     @default(false)
+  bestseller       Boolean     @default(false)
+  available        Boolean     @default(true)
+  published        Boolean     @default(true)
+  sortOrder        Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  orderItems       OrderItem[]
+  reviews          Review[]
 
   @@index([slug])
   @@index([categoryId])
   @@index([featured, published])
   @@index([bestseller, published])
+}
+
+model Review {
+  id            String       @id @default(cuid())
+  productId     String
+  product       Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customerName  String
+  customerEmail String
+  rating        Int
+  comment       String       @db.Text
+  status        ReviewStatus @default(PENDING)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([productId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([productId, status])
 }
 
 model Order {
@@ -256,4 +281,3 @@ model UploadedAsset {
 
   @@index([publicId])
 }
-

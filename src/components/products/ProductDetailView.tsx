@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -11,12 +11,14 @@ import {
   ChevronRight,
   Clock,
   MessageCircle,
+  MessageSquareText,
   Minus,
   Plus,
   Scale,
   Share2,
   ShoppingBag,
   Sparkles,
+  Star,
   Users,
 } from "lucide-react";
 import { Product } from "@/types";
@@ -39,8 +41,48 @@ export default function ProductDetailView({
   const [specialNotes, setSpecialNotes] = useState("");
   const [isAdded, setIsAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [reviews, setReviews] = useState<Array<{ id: string; customerName: string; rating: number; comment: string; createdAt: string }>>([]);
+  const [averageRating, setAverageRating] = useState(0);
+  const [reviewCount, setReviewCount] = useState(0);
+  const [submittedRating, setSubmittedRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewForm, setReviewForm] = useState({
+    customerName: "",
+    customerEmail: "",
+    comment: "",
+  });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const { addToCart } = useCart();
+
+  useEffect(() => {
+    let ignore = false;
+
+    const fetchReviews = async () => {
+      try {
+        const res = await fetch(`/api/products/${product.slug}/reviews`);
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || "Unable to load reviews");
+        }
+
+        if (!ignore) {
+          setReviews(Array.isArray(json.data?.reviews) ? json.data.reviews : []);
+          setAverageRating(Number(json.data?.averageRating || 0));
+          setReviewCount(Number(json.data?.totalReviews || 0));
+        }
+      } catch (error) {
+        console.warn("Review load failed:", error);
+      }
+    };
+
+    fetchReviews();
+    return () => {
+      ignore = true;
+    };
+  }, [product.slug]);
 
   const currentPrice = product.salePrice ?? product.price;
 
@@ -75,6 +117,65 @@ export default function ProductDetailView({
     quantity,
     specialNotes
   );
+
+  const handleReviewSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setReviewError(null);
+    setReviewMessage(null);
+
+    const commentLength = reviewForm.comment.trim().length;
+    if (
+      !reviewForm.customerName.trim() ||
+      !reviewForm.customerEmail.trim() ||
+      commentLength < 15 ||
+      commentLength > 1500 ||
+      submittedRating < 1
+    ) {
+      setReviewError("Please enter your name, a valid email, a review between 15 and 1500 characters, and select a rating between 1 and 5.");
+      return;
+    }
+
+    setIsSubmittingReview(true);
+
+    try {
+      const res = await fetch(`/api/products/${product.slug}/reviews`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: reviewForm.customerName,
+          customerEmail: reviewForm.customerEmail,
+          rating: submittedRating,
+          comment: reviewForm.comment,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        const detailError =
+          json.details && typeof json.details === "object"
+            ? Object.values(json.details as Record<string, unknown>)
+                .flatMap((messages) => Array.isArray(messages) ? messages : [])
+                .filter((message): message is string => typeof message === "string")
+                .join(", ")
+            : typeof json.details === "string"
+              ? json.details
+              : json.error;
+        throw new Error(detailError || "Review submission failed");
+      }
+
+      setReviewMessage(json.message || "Thank you for sharing your experience! Your review has been submitted and is awaiting approval. We appreciate your love for KRUMBISTRY.");
+      setReviewForm({ customerName: "", customerEmail: "", comment: "" });
+      setSubmittedRating(0);
+      setHoverRating(0);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Unable to submit review";
+      setReviewError(message);
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const ratingDisplay = reviewCount > 0 ? averageRating : 0;
 
   return (
     <div className="site-container py-10 md:py-16">
@@ -373,6 +474,176 @@ export default function ProductDetailView({
           </div>
         </div>
       </div>
+
+      {/* Customer Reviews Section */}
+      <section className="mt-24 border-t border-[#32190D]/10 pt-16">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <span className="text-xs uppercase tracking-[0.2em] text-[#98743A] font-semibold">
+                Customer Reviews
+              </span>
+              <h2 className="font-serif text-2xl md:text-4xl font-medium mt-2 text-[#32190D]">
+                Real words from people who made KRUMBISTRY part of their sweetest moments.
+              </h2>
+            </div>
+            <div className="rounded-2xl border border-[#32190D]/10 bg-white p-4 min-w-[220px] shadow-xs">
+              <div className="flex items-center gap-2">
+                <div className="flex text-[#D6A64B]">
+                  {Array.from({ length: 5 }, (_, idx) => (
+                    <Star
+                      key={idx}
+                      size={16}
+                      fill={idx < Math.round(ratingDisplay) ? "currentColor" : "transparent"}
+                      className={idx < Math.round(ratingDisplay) ? "text-[#D6A64B]" : "text-[#D6A64B]/30"}
+                    />
+                  ))}
+                </div>
+                <span className="text-lg font-semibold text-[#32190D]">{ratingDisplay.toFixed(1)}</span>
+              </div>
+              <div className="mt-1 text-xs text-[#806E5D]">
+                {reviewCount} verified review{reviewCount === 1 ? "" : "s"}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-8">
+            <div className="space-y-5">
+              {reviews.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-[#32190D]/20 bg-[#FAF6EE] p-8 text-center text-sm text-[#806E5D]">
+                  No approved reviews yet. Be the first to share your experience.
+                </div>
+              ) : (
+                reviews.map((review) => (
+                  <article key={review.id} className="rounded-2xl border border-[#32190D]/10 bg-white p-5 shadow-xs">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="font-semibold text-[#32190D]">{review.customerName}</div>
+                        <div className="mt-1 flex items-center gap-2 text-[#D6A64B]">
+                          {Array.from({ length: 5 }, (_, index) => (
+                            <Star
+                              key={`${review.id}-${index}`}
+                              size={14}
+                              fill={index < review.rating ? "currentColor" : "transparent"}
+                              className={index < review.rating ? "text-[#D6A64B]" : "text-[#D6A64B]/35"}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-[11px] text-[#806E5D]">
+                        {new Date(review.createdAt).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm leading-relaxed text-[#806E5D] whitespace-pre-wrap">
+                      {review.comment}
+                    </p>
+                  </article>
+                ))
+              )}
+            </div>
+
+            <div className="rounded-2xl border border-[#32190D]/10 bg-[#FAF6EE] p-5 shadow-xs">
+              <div className="flex items-center gap-2 text-[#32190D]">
+                <MessageSquareText size={18} className="text-[#B88632]" />
+                <h3 className="font-serif text-2xl font-semibold">Write a review</h3>
+              </div>
+
+              {reviewMessage && (
+                <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700">
+                  {reviewMessage}
+                </div>
+              )}
+
+              {reviewError && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                  {reviewError}
+                </div>
+              )}
+
+              <form onSubmit={handleReviewSubmit} className="mt-5 space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-[#32190D] mb-1.5">Your Name</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={100}
+                    value={reviewForm.customerName}
+                    onChange={(event) => setReviewForm((prev) => ({ ...prev, customerName: event.target.value }))}
+                    className="w-full rounded-lg border border-[#32190D]/15 bg-white px-3 py-2.5 text-xs text-[#32190D] outline-none focus:border-[#D6A64B]"
+                    placeholder="Enter your name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#32190D] mb-1.5">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={reviewForm.customerEmail}
+                    onChange={(event) => setReviewForm((prev) => ({ ...prev, customerEmail: event.target.value }))}
+                    className="w-full rounded-lg border border-[#32190D]/15 bg-white px-3 py-2.5 text-xs text-[#32190D] outline-none focus:border-[#D6A64B]"
+                    placeholder="you@example.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#32190D] mb-1.5">Your Rating</label>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }, (_, index) => {
+                      const currentValue = index + 1;
+                      const isFilled = currentValue <= (hoverRating || submittedRating);
+
+                      return (
+                        <button
+                          key={currentValue}
+                          type="button"
+                          onMouseEnter={() => setHoverRating(currentValue)}
+                          onMouseLeave={() => setHoverRating(0)}
+                          onClick={() => setSubmittedRating(currentValue)}
+                          className="rounded-full p-1 transition-colors"
+                          aria-label={`Rate ${currentValue} star${currentValue > 1 ? "s" : ""}`}
+                        >
+                          <Star
+                            size={22}
+                            fill={isFilled ? "currentColor" : "transparent"}
+                            className={isFilled ? "text-[#D6A64B]" : "text-[#D6A64B]/35"}
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[#32190D] mb-1.5">Write Your Review</label>
+                  <textarea
+                    rows={5}
+                    required
+                    minLength={15}
+                    maxLength={1500}
+                    value={reviewForm.comment}
+                    onChange={(event) => setReviewForm((prev) => ({ ...prev, comment: event.target.value }))}
+                    className="w-full rounded-lg border border-[#32190D]/15 bg-white px-3 py-2.5 text-xs text-[#32190D] outline-none focus:border-[#D6A64B] resize-y"
+                    placeholder="Tell us about your experience with this product..."
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="w-full button button-dark text-xs py-3 px-4 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Related Products Section */}
       {relatedProducts.length > 0 && (

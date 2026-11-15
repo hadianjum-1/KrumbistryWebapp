@@ -8,8 +8,15 @@ import Story from "@/components/home/Story";
 import CustomOrder from "@/components/home/CustomOrder";
 import Testimonials from "@/components/home/Testimonials";
 import InstagramGallery from "@/components/home/InstagramGallery";
+import FeedbackWidget from "@/components/feedback/FeedbackWidget";
+
+import { SITE_MODE } from "@/config/site-mode";
+import ComingSoon from "@/components/ComingSoon";
 
 export default function HomePage() {
+  if (SITE_MODE.comingSoon) {
+    return <ComingSoon />;
+  }
   return (
     <main>
       <Header />
@@ -21,6 +28,7 @@ export default function HomePage() {
       <CustomOrder />
       <Testimonials />
       <InstagramGallery />
+      <FeedbackWidget />
       <Footer />
     </main>
   );
