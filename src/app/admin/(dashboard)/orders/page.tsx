@@ -22,6 +22,7 @@ interface OrderItem {
 interface Order {
   id: string;
   orderNumber: string;
+  source?: "ONLINE" | "POS";
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -242,8 +243,19 @@ export default function AdminOrdersPage() {
                     <tr key={order.id} className="hover:bg-[#F8F3E9]/30 transition-colors">
                       {/* Order Number & Date */}
                       <td className="py-3.5 px-4">
-                        <div className="font-mono font-bold text-sm text-[#32190D]">
-                          {order.orderNumber}
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-sm text-[#32190D]">
+                            {order.orderNumber}
+                          </span>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase ${
+                              order.source === "POS"
+                                ? "bg-[#32190D] text-[#D6A64B]"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {order.source || "ONLINE"}
+                          </span>
                         </div>
                         <div className="text-[11px] text-[#32190D]/50 flex items-center gap-1 mt-0.5">
                           <Clock size={11} />

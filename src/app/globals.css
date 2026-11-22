@@ -1679,3 +1679,45 @@ a {
   background: #d6a64b;
   transition: width 0.4s ease;
 }
+
+/* KRUMBISTRY 80mm Thermal Receipt Printing Rules */
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #krumbistry-receipt,
+  #krumbistry-receipt * {
+    visibility: visible !important;
+  }
+
+  #krumbistry-receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 76mm !important;
+    max-width: 80mm !important;
+    padding: 2mm 3mm !important;
+    margin: 0 auto !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  @page {
+    size: 80mm auto;
+    margin: 0mm;
+  }
+}
+

@@ -16,16 +16,29 @@ export interface ReviewFilters {
 export async function getReviewSummary(productId?: string) {
   const baseWhere: Prisma.ReviewWhereInput = productId ? { productId } : {};
 
-  const [total, pending, approved, rejected, averageRating] = await Promise.all([
-    db.review.count({ where: baseWhere }),
-    db.review.count({ where: { ...baseWhere, status: "PENDING" } }),
-    db.review.count({ where: { ...baseWhere, status: "APPROVED" } }),
-    db.review.count({ where: { ...baseWhere, status: "REJECTED" } }),
+  const [statusCounts, averageRating] = await Promise.all([
+    db.review.groupBy({
+      by: ["status"],
+      where: baseWhere,
+      _count: { _all: true },
+    }),
     db.review.aggregate({
       where: { ...baseWhere, status: "APPROVED" },
       _avg: { rating: true },
     }),
   ]);
+
+  let pending = 0;
+  let approved = 0;
+  let rejected = 0;
+
+  for (const item of statusCounts) {
+    if (item.status === "PENDING") pending = item._count._all;
+    else if (item.status === "APPROVED") approved = item._count._all;
+    else if (item.status === "REJECTED") rejected = item._count._all;
+  }
+
+  const total = pending + approved + rejected;
 
   return {
     total,

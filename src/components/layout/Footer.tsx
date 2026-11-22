@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -25,10 +25,22 @@ export default function Footer() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newsletterError, setNewsletterError] = useState<string | null>(null);
+  const [settings, setSettings] = useState(siteSettings);
   const currentYear = 2026;
 
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSettings((prev) => ({ ...prev, ...json.data }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const whatsappUrl = getWhatsAppUrl(
-    `Hello ${siteSettings.bakeryName}! I'd like to get in touch.`
+    `Hello ${settings.bakeryName || siteSettings.bakeryName}! I'd like to get in touch.`
   );
 
   async function handleSubscribe(event: FormEvent<HTMLFormElement>) {
@@ -80,7 +92,7 @@ export default function Footer() {
             <div className="footer-socials">
   <a
     className="footer-social"
-    href={siteSettings.instagramUrl}
+    href={settings.instagramUrl || siteSettings.instagramUrl}
     target="_blank"
     rel="noopener noreferrer"
     aria-label="Follow on Instagram"
@@ -90,7 +102,7 @@ export default function Footer() {
 
   <a
     className="footer-social"
-    href={siteSettings.facebookUrl}
+    href={settings.facebookUrl || siteSettings.facebookUrl}
     target="_blank"
     rel="noopener noreferrer"
     aria-label="Follow on Facebook"
@@ -100,7 +112,7 @@ export default function Footer() {
 
   <a
     className="footer-social"
-    href={siteSettings.tiktokUrl}
+    href={settings.tiktokUrl || siteSettings.tiktokUrl}
     target="_blank"
     rel="noopener noreferrer"
     aria-label="Follow on TikTok"
@@ -133,23 +145,23 @@ export default function Footer() {
           {/* Contact Column */}
           <div className="footer-column">
             <h3>Say hello</h3>
-            <a href={`mailto:${siteSettings.contactEmail}`}>
-              <Mail size={15} /> {siteSettings.contactEmail}
+            <a href={`mailto:${settings.contactEmail || siteSettings.contactEmail}`}>
+              <Mail size={15} /> {settings.contactEmail || siteSettings.contactEmail}
             </a>
-            <a href={`tel:${siteSettings.contactPhone.replace(/\s/g, "")}`}>
-              <Phone size={15} /> {siteSettings.contactPhone}
+            <a href={`tel:${(settings.contactPhone || siteSettings.contactPhone).replace(/\s/g, "")}`}>
+              <Phone size={15} /> {settings.contactPhone || siteSettings.contactPhone}
             </a>
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <MessageCircle size={15} /> WhatsApp Us
             </a>
             <a
-              href={`https://maps.google.com/?q=${encodeURIComponent(siteSettings.address)}`}
+              href={`https://maps.google.com/?q=${encodeURIComponent(settings.address || siteSettings.address)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="footer-address"
             >
               <MapPin size={15} className="shrink-0 mt-0.5" />
-              <span>{siteSettings.address}</span>
+              <span>{settings.address || siteSettings.address}</span>
             </a>
           </div>
 
@@ -157,7 +169,7 @@ export default function Footer() {
           <div className="footer-column footer-hours">
             <h3>Come by</h3>
             <p><Clock3 size={15} /> Business hours</p>
-            <span>{siteSettings.openingHours}</span>
+            <span>{settings.openingHours || siteSettings.openingHours}</span>
             <p><Truck size={15} /> Pickup &amp; delivery</p>
             <span>Freshly dispatched across the city</span>
           </div>

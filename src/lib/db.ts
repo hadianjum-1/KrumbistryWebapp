@@ -44,18 +44,16 @@ function getDatabaseUrl(): string | undefined {
   try {
     const url = new URL(rawUrl);
     // Neon PgBouncer requirement: pgbouncer=true prevents connection stalling on prepared statements
-    if (url.hostname.includes("-pooler.") && !url.searchParams.has("pgbouncer")) {
+    if (url.hostname.includes("-pooler.")) {
+      // Remove channel_binding on pooled connections as PgBouncer terminates TLS
+      url.searchParams.delete("channel_binding");
       url.searchParams.set("pgbouncer", "true");
     }
-    if (!url.searchParams.has("connect_timeout")) {
-      url.searchParams.set("connect_timeout", "30");
-    }
-    if (!url.searchParams.has("pool_timeout")) {
-      url.searchParams.set("pool_timeout", "30");
-    }
-    if (!url.searchParams.has("connection_limit")) {
-      url.searchParams.set("connection_limit", "25");
-    }
+    url.searchParams.set("connect_timeout", "30");
+    // 60s pool timeout avoids premature P2024 timeouts during cold starts
+    url.searchParams.set("pool_timeout", "60");
+    // Limit to 10 connections per client to prevent Neon pool exhaustion in dev
+    url.searchParams.set("connection_limit", "10");
     return url.toString();
   } catch {
     return rawUrl;

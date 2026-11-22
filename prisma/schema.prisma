@@ -64,6 +64,52 @@ enum ReviewStatus {
   REJECTED
 }
 
+enum OrderSource {
+  ONLINE
+  POS
+}
+
+enum StaffRole {
+  OWNER
+  MANAGER
+  CASHIER
+}
+
+enum DeviceStatus {
+  PENDING
+  AUTHORIZED
+  REVOKED
+}
+
+enum PosPaymentMethod {
+  CASH
+  CARD
+  BANK_TRANSFER
+  JAZZ_CASH
+  EASYPAISA
+}
+
+enum RegisterSessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum StockMovementType {
+  INITIAL
+  PURCHASE
+  SALE_POS
+  SALE_ONLINE
+  WASTAGE
+  RETURN
+  ADJUSTMENT
+}
+
+enum ConflictStatus {
+  PENDING_REVIEW
+  RESOLVED
+  IGNORED
+}
+
 model Admin {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -113,15 +159,19 @@ model Product {
   weight           String?
   servings         String?
   preparationTime  String?
-  featured         Boolean     @default(false)
-  bestseller       Boolean     @default(false)
-  available        Boolean     @default(true)
-  published        Boolean     @default(true)
-  sortOrder        Int         @default(0)
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  featured         Boolean         @default(false)
+  bestseller       Boolean         @default(false)
+  available        Boolean         @default(true)
+  published        Boolean         @default(true)
+  trackInventory   Boolean         @default(true)
+  stockQuantity    Int             @default(100)
+  lowStockThreshold Int            @default(5)
+  sortOrder        Int             @default(0)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   orderItems       OrderItem[]
   reviews          Review[]
+  stockMovements   StockMovement[]
 
   @@index([slug])
   @@index([categoryId])
@@ -148,27 +198,46 @@ model Review {
 }
 
 model Order {
-  id              String        @id @default(cuid())
-  orderNumber     String        @unique
-  customerName    String
-  customerEmail   String
-  customerPhone   String
-  deliveryAddress String        @db.Text
-  customerNotes   String?       @db.Text
-  status          OrderStatus   @default(PENDING)
-  paymentMethod   PaymentMethod @default(CASH_ON_DELIVERY)
-  paymentStatus   PaymentStatus @default(UNPAID)
-  subtotal        Decimal       @db.Decimal(10, 2)
-  deliveryFee     Decimal       @db.Decimal(10, 2)
-  total           Decimal       @db.Decimal(10, 2)
-  internalNotes   String?       @db.Text
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  items           OrderItem[]
+  id                  String              @id @default(cuid())
+  orderNumber         String              @unique
+  source              OrderSource         @default(ONLINE)
+  customerName        String
+  customerEmail       String
+  customerPhone       String
+  deliveryAddress     String              @db.Text
+  customerNotes       String?             @db.Text
+  status              OrderStatus         @default(PENDING)
+  paymentMethod       PaymentMethod       @default(CASH_ON_DELIVERY)
+  paymentStatus       PaymentStatus       @default(UNPAID)
+  subtotal            Decimal             @db.Decimal(10, 2)
+  deliveryFee         Decimal             @db.Decimal(10, 2)
+  discount            Decimal             @default(0) @db.Decimal(10, 2)
+  tax                 Decimal             @default(0) @db.Decimal(10, 2)
+  total               Decimal             @db.Decimal(10, 2)
+  internalNotes       String?             @db.Text
+  // POS Specific fields
+  deviceId            String?
+  device              Device?             @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  staffId             String?
+  staff               Staff?              @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  registerSessionId   String?
+  registerSession     PosRegisterSession? @relation(fields: [registerSessionId], references: [id], onDelete: SetNull)
+  receiptNumber       String?
+  clientTransactionId String?             @unique
+  isOfflineSync       Boolean             @default(false)
+  syncedAt            DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  items               OrderItem[]
+  payments            Payment[]
 
   @@index([orderNumber])
   @@index([status])
   @@index([paymentStatus])
+  @@index([source])
+  @@index([deviceId])
+  @@index([staffId])
+  @@index([receiptNumber])
   @@index([createdAt])
 }
 
@@ -280,4 +349,170 @@ model UploadedAsset {
   createdAt DateTime @default(now())
 
   @@index([publicId])
+}
+
+model Staff {
+  id               String               @id @default(cuid())
+  name             String
+  email            String?              @unique
+  pinHash          String
+  role             StaffRole            @default(CASHIER)
+  active           Boolean              @default(true)
+  maxOfflineHours  Int                  @default(72) // Max offline operation before revalidation
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  orders           Order[]
+  registerSessions PosRegisterSession[]
+  stockMovements   StockMovement[]
+  auditLogs        AuditLog[]
+
+  @@index([active])
+  @@index([role])
+}
+
+model Device {
+  id               String               @id @default(cuid())
+  deviceCode       String               @unique // e.g. "POS-01"
+  name             String               // e.g. "Main Counter Terminal"
+  branch           String               @default("Main Bakery")
+  status           DeviceStatus         @default(AUTHORIZED)
+  allowOffline     Boolean              @default(true)
+  secretTokenHash  String
+  lastSyncAt       DateTime?
+  registeredAt     DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  orders           Order[]
+  registerSessions PosRegisterSession[]
+  syncBatches      PosSyncBatch[]
+  conflicts        InventoryConflict[]
+
+  @@index([deviceCode])
+  @@index([status])
+}
+
+model PosRegisterSession {
+  id               String                 @id @default(cuid())
+  deviceId         String
+  device           Device                 @relation(fields: [deviceId], references: [id], onDelete: Restrict)
+  staffId          String
+  staff            Staff                  @relation(fields: [staffId], references: [id], onDelete: Restrict)
+  openedAt         DateTime               @default(now())
+  closedAt         DateTime?
+  openingCash      Decimal                @db.Decimal(10, 2)
+  closingCash      Decimal?               @db.Decimal(10, 2)
+  expectedCash     Decimal?               @db.Decimal(10, 2)
+  cashDifference   Decimal?               @db.Decimal(10, 2)
+  cashSalesCount   Int                    @default(0)
+  cashSalesTotal   Decimal                @default(0) @db.Decimal(10, 2)
+  cardSalesTotal   Decimal                @default(0) @db.Decimal(10, 2)
+  otherSalesTotal  Decimal                @default(0) @db.Decimal(10, 2)
+  cashInTotal      Decimal                @default(0) @db.Decimal(10, 2)
+  cashOutTotal     Decimal                @default(0) @db.Decimal(10, 2)
+  status           RegisterSessionStatus  @default(OPEN)
+  notes            String?                @db.Text
+  clientSessionId  String?                @unique // For offline register session idempotency
+  orders           Order[]
+  cashMovements    RegisterCashMovement[]
+
+  @@index([deviceId, status])
+  @@index([staffId])
+  @@index([openedAt])
+}
+
+model RegisterCashMovement {
+  id        String             @id @default(cuid())
+  sessionId String
+  session   PosRegisterSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  type      String             // "CASH_IN" or "CASH_OUT"
+  amount    Decimal            @db.Decimal(10, 2)
+  reason    String
+  createdAt DateTime           @default(now())
+
+  @@index([sessionId])
+}
+
+model Payment {
+  id             String           @id @default(cuid())
+  orderId        String
+  order          Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method         PosPaymentMethod
+  amount         Decimal          @db.Decimal(10, 2)
+  amountReceived Decimal?         @db.Decimal(10, 2)
+  changeGiven    Decimal?         @db.Decimal(10, 2)
+  reference      String?
+  status         PaymentStatus    @default(PAID)
+  createdAt      DateTime         @default(now())
+
+  @@index([orderId])
+  @@index([method])
+}
+
+model StockMovement {
+  id            String            @id @default(cuid())
+  productId     String
+  product       Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  type          StockMovementType
+  quantity      Int               // Positive for stock in, negative for stock out
+  balanceAfter  Int
+  referenceId   String?           // Order ID, Adjustment ID, etc.
+  notes         String?
+  staffId       String?
+  staff         Staff?            @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  createdAt     DateTime          @default(now())
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model InventoryConflict {
+  id                       String         @id @default(cuid())
+  clientTransactionId      String
+  deviceId                 String?
+  device                   Device?        @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  productId                String
+  orderId                  String?
+  productName              String
+  requestedQuantity        Int
+  availableQuantityAtSync  Int
+  status                   ConflictStatus @default(PENDING_REVIEW)
+  notes                    String?        @db.Text
+  resolvedAt               DateTime?
+  createdAt                DateTime       @default(now())
+
+  @@index([status])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+model PosSyncBatch {
+  id                 String   @id @default(cuid())
+  deviceId           String
+  device             Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  transactionsCount  Int
+  successCount       Int
+  conflictCount      Int
+  failedCount        Int
+  payloadSize        Int?
+  syncedAt           DateTime @default(now())
+
+  @@index([deviceId])
+  @@index([syncedAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String   // e.g. "POS_LOGIN", "SALE_COMPLETE", "REGISTER_OPEN", "DEVICE_REVOKE"
+  entity    String   // e.g. "Order", "Device", "Staff", "PosRegisterSession"
+  entityId  String?
+  staffId   String?
+  staff     Staff?   @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  deviceId  String?
+  details   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([entity, entityId])
+  @@index([staffId])
+  @@index([createdAt])
 }

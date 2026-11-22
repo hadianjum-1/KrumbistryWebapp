@@ -20,6 +20,8 @@ import {
   ChevronRight,
   Shield,
   Loader2,
+  Boxes,
+  Users,
 } from "lucide-react";
 
 interface AdminSessionInfo {
@@ -78,9 +80,27 @@ const baseNavItems = [
     exact: false,
   },
   {
+    label: "Inventory & Stock",
+    href: "/admin/inventory",
+    icon: Boxes,
+    exact: false,
+  },
+  {
+    label: "POS Staff & PINs",
+    href: "/admin/staff",
+    icon: Users,
+    exact: false,
+  },
+  {
     label: "Store Settings",
     href: "/admin/settings",
     icon: Settings,
+    exact: false,
+  },
+  {
+    label: "Point of Sale (POS)",
+    href: "/pos",
+    icon: ShoppingBag,
     exact: false,
   },
 ];

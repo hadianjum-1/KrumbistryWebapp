@@ -561,7 +561,7 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <div className="divide-y divide-[#32190D]/5 mt-2">
+          <div className="divide-y divide-[#32190D]/5 mt-2 max-h-[365px] overflow-y-auto pr-1.5 [scrollbar-width:thin] [scrollbar-color:rgba(50,25,13,0.18)_transparent]">
             {isLoading ? (
               <div className="py-12 text-center text-xs text-[#32190D]/50">
                 Loading orders...
@@ -637,7 +637,7 @@ export default function AdminDashboardPage() {
             </Link>
           </div>
 
-          <div className="divide-y divide-[#32190D]/5 mt-2">
+          <div className="divide-y divide-[#32190D]/5 mt-2 max-h-[365px] overflow-y-auto pr-1.5 [scrollbar-width:thin] [scrollbar-color:rgba(50,25,13,0.18)_transparent]">
             {isLoading ? (
               <div className="py-12 text-center text-xs text-[#32190D]/50">
                 Loading inquiries...

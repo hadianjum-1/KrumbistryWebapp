@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Batch 1: Key entity counts
+    // Batch 1: Key entity counts and total revenue in lightweight parallel queries
     const [
       totalProducts,
       activeProducts,
@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
       newCustomOrders,
       totalInquiries,
       newInquiries,
+      revenueAggregate,
     ] = await Promise.all([
       db.product.count(),
       db.product.count({ where: { published: true, available: true } }),
@@ -69,41 +70,40 @@ export async function GET(request: NextRequest) {
       db.customOrder.count({ where: { status: "NEW" } }),
       db.inquiry.count(),
       db.inquiry.count({ where: { status: "NEW" } }),
+      db.order.aggregate({
+        where: { paymentStatus: "PAID" },
+        _sum: { total: true },
+      }),
     ]);
 
-    // Batch 2: Detailed orders and inquiries
+    // Batch 2: Detailed orders (lightweight selects without unnecessary joins) and inquiries
     const [
-      allPaidOrders,
       ordersLast24h,
       ordersToday,
       ordersYesterday,
       filteredOrdersList,
       recentInquiries,
     ] = await Promise.all([
-      db.order.findMany({
-        where: { paymentStatus: "PAID" },
-        select: { total: true },
-      }),
-      // 24 Hours orders
+      // 24 Hours orders (only fields needed for revenue & count)
       db.order.findMany({
         where: { createdAt: { gte: twentyFourHoursAgo } },
+        select: { total: true, status: true, paymentStatus: true, createdAt: true },
         orderBy: { createdAt: "desc" },
-        include: { items: true },
       }),
       // Today orders
       db.order.findMany({
         where: { createdAt: { gte: startOfToday, lte: endOfToday } },
-        include: { items: true },
+        select: { total: true, status: true, paymentStatus: true },
       }),
       // Yesterday orders
       db.order.findMany({
         where: { createdAt: { gte: startOfYesterday, lte: endOfYesterday } },
-        include: { items: true },
+        select: { total: true, status: true, paymentStatus: true },
       }),
-      // Filtered orders list
+      // Filtered orders list (fetch up to 20 for scrollable recent orders feed)
       db.order.findMany({
         where: filterWhere,
-        take: 10,
+        take: 20,
         orderBy: { createdAt: "desc" },
         include: { items: true },
       }),
@@ -114,10 +114,7 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const totalRevenue = allPaidOrders.reduce(
-      (acc: number, curr: { total: unknown }) => acc + Number(curr.total),
-      0
-    );
+    const totalRevenue = Number(revenueAggregate._sum.total || 0);
 
     // 24h metrics
     const revenue24h = ordersLast24h

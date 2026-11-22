@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -23,11 +23,23 @@ import { getWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [settings, setSettings] = useState(siteSettings);
   const pathname = usePathname();
   const { totalItems, openCart } = useCart();
 
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setSettings((prev) => ({ ...prev, ...json.data }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const generalWhatsAppUrl = getWhatsAppUrl(
-    `Hello ${siteSettings.bakeryName}! I have a question about your bakery.`
+    `Hello ${settings.bakeryName || siteSettings.bakeryName}! I have a question about your bakery.`
   );
 
   return (
@@ -36,17 +48,17 @@ export default function Header() {
         <div className="site-container announcement-inner">
           <p>
             <Sparkles size={13} />
-            {siteSettings.announcementText}
+            {settings.announcementText || siteSettings.announcementText}
           </p>
 
           <span className="announcement-note">
-            {siteSettings.announcementSubtext}
+            {settings.announcementSubtext || siteSettings.announcementSubtext}
           </span>
 
           <div className="announcement-socials">
            <a
                className="footer-social"
-               href={siteSettings.instagramUrl}
+               href={settings.instagramUrl || siteSettings.instagramUrl}
                target="_blank"
                rel="noopener noreferrer"
                aria-label="Follow on Instagram"
@@ -65,7 +77,7 @@ export default function Header() {
 
             <a
                 className="footer-social"
-                href={siteSettings.facebookUrl}
+                href={settings.facebookUrl || siteSettings.facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow on Facebook"
@@ -75,7 +87,7 @@ export default function Header() {
             
               <a
                 className="footer-social"
-                href={siteSettings.tiktokUrl}
+                href={settings.tiktokUrl || siteSettings.tiktokUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Follow on TikTok"

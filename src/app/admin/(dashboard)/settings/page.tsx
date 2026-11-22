@@ -10,7 +10,11 @@ import {
   Phone,
   Truck,
   Share2,
+  ExternalLink,
 } from "lucide-react";
+import { FaTiktok, FaFacebookF } from "react-icons/fa";
+import InstagramIcon from "@/components/ui/InstagramIcon";
+import StorageUsageOverview from "@/components/admin/StorageUsageOverview";
 
 export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +39,7 @@ export default function AdminSettingsPage() {
     minimumOrderAmount: "0",
     instagramUrl: "",
     facebookUrl: "",
+    tiktokUrl: "",
   });
 
   useEffect(() => {
@@ -62,6 +67,7 @@ export default function AdminSettingsPage() {
           minimumOrderAmount: String(d.minimumOrderAmount ?? "0"),
           instagramUrl: d.instagramUrl || "",
           facebookUrl: d.facebookUrl || "",
+          tiktokUrl: d.tiktokUrl || "",
         });
       })
       .catch((err: unknown) => {
@@ -70,6 +76,20 @@ export default function AdminSettingsPage() {
       })
       .finally(() => setIsLoading(false));
   }, []);
+
+  const handleUrlBlur = (field: "instagramUrl" | "facebookUrl" | "tiktokUrl") => {
+    let val = settings[field].trim();
+    if (!val) return;
+    if (val.startsWith("@")) {
+      const handle = val.slice(1);
+      if (field === "instagramUrl") val = `https://www.instagram.com/${handle}`;
+      else if (field === "tiktokUrl") val = `https://www.tiktok.com/@${handle}`;
+      else if (field === "facebookUrl") val = `https://www.facebook.com/${handle}`;
+    } else if (!/^https?:\/\//i.test(val)) {
+      val = `https://${val}`;
+    }
+    setSettings((prev) => ({ ...prev, [field]: val }));
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -108,20 +128,24 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#32190D]/10">
         <div>
           <h1 className="font-serif text-2xl md:text-3xl font-bold text-[#32190D]">
-            Bakery & Storefront Settings
+            Bakery &amp; Storefront Settings
           </h1>
           <p className="text-xs text-[#32190D]/70 mt-1">
-            Configure business hours, contact numbers, delivery rules, and announcement messages.
+            Configure business hours, contact numbers, delivery rules, social media channels, and monitor storage capacity.
           </p>
         </div>
 
         <button
-          type="submit"
+          type="button"
+          onClick={(e) => {
+            const form = document.getElementById("admin-settings-form") as HTMLFormElement | null;
+            if (form) form.requestSubmit();
+          }}
           disabled={isSaving}
           className="inline-flex items-center gap-2 rounded-lg bg-[#32190D] px-5 py-2.5 text-xs font-semibold text-white hover:bg-[#432314] transition-colors shadow-sm disabled:opacity-50 cursor-pointer"
         >
@@ -148,7 +172,12 @@ export default function AdminSettingsPage() {
         </div>
       )}
 
-      <div className="space-y-6">
+      {/* Storage & Usage Overview Monitoring Section */}
+      <StorageUsageOverview />
+
+      {/* Settings Form */}
+      <form id="admin-settings-form" onSubmit={handleSubmit} className="space-y-8">
+        <div className="space-y-6">
         {/* Section 1: Store Identity & Announcement */}
         <div className="bg-white border border-[#32190D]/10 rounded-2xl p-6 shadow-xs space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-[#32190D]/10">
@@ -391,20 +420,43 @@ export default function AdminSettingsPage() {
 
         {/* Section 4: Social Links */}
         <div className="bg-white border border-[#32190D]/10 rounded-2xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-[#32190D]/10">
-            <Share2 size={18} className="text-[#D6A64B]" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-[#32190D]">
-              Social Media Channels
-            </h2>
+          <div className="flex items-center justify-between pb-2 border-b border-[#32190D]/10">
+            <div className="flex items-center gap-2">
+              <Share2 size={18} className="text-[#D6A64B]" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[#32190D]">
+                Social Media Channels
+              </h2>
+            </div>
+            <span className="text-[11px] text-[#32190D]/50 hidden sm:inline">
+              Changes sync immediately to storefront header &amp; footer
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Instagram */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#32190D]">
-                Instagram Profile URL
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#32190D]">
+                  <InstagramIcon size={14} className="text-[#D6A64B]" />
+                  <span>Instagram Profile</span>
+                </label>
+                {settings.instagramUrl ? (
+                  <a
+                    href={settings.instagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D6A64B] hover:text-[#b88c38] transition-colors"
+                  >
+                    <span>Test Link</span>
+                    <ExternalLink size={11} />
+                  </a>
+                ) : (
+                  <span className="text-[11px] text-[#32190D]/40">Not set</span>
+                )}
+              </div>
               <input
-                type="url"
+                type="text"
+                placeholder="https://instagram.com/krumbistry or @krumbistry"
                 value={settings.instagramUrl}
                 onChange={(e) =>
                   setSettings((prev) => ({
@@ -412,16 +464,35 @@ export default function AdminSettingsPage() {
                     instagramUrl: e.target.value,
                   }))
                 }
-                className="mt-1.5 w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2 text-xs font-mono text-[#32190D] focus:border-[#D6A64B] focus:bg-white focus:outline-none"
+                onBlur={() => handleUrlBlur("instagramUrl")}
+                className="mt-1.5 w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2 text-xs font-mono text-[#32190D] placeholder:text-[#32190D]/30 focus:border-[#D6A64B] focus:bg-white focus:outline-none"
               />
             </div>
 
+            {/* Facebook */}
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-[#32190D]">
-                Facebook Page URL
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#32190D]">
+                  <FaFacebookF size={13} className="text-sky-700" />
+                  <span>Facebook Page</span>
+                </label>
+                {settings.facebookUrl ? (
+                  <a
+                    href={settings.facebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D6A64B] hover:text-[#b88c38] transition-colors"
+                  >
+                    <span>Test Link</span>
+                    <ExternalLink size={11} />
+                  </a>
+                ) : (
+                  <span className="text-[11px] text-[#32190D]/40">Not set</span>
+                )}
+              </div>
               <input
-                type="url"
+                type="text"
+                placeholder="https://facebook.com/krumbistry"
                 value={settings.facebookUrl}
                 onChange={(e) =>
                   setSettings((prev) => ({
@@ -429,13 +500,51 @@ export default function AdminSettingsPage() {
                     facebookUrl: e.target.value,
                   }))
                 }
-                className="mt-1.5 w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2 text-xs font-mono text-[#32190D] focus:border-[#D6A64B] focus:bg-white focus:outline-none"
+                onBlur={() => handleUrlBlur("facebookUrl")}
+                className="mt-1.5 w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2 text-xs font-mono text-[#32190D] placeholder:text-[#32190D]/30 focus:border-[#D6A64B] focus:bg-white focus:outline-none"
+              />
+            </div>
+
+            {/* TikTok */}
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#32190D]">
+                  <FaTiktok size={13} className="text-[#32190D]" />
+                  <span>TikTok Profile</span>
+                </label>
+                {settings.tiktokUrl ? (
+                  <a
+                    href={settings.tiktokUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-[#D6A64B] hover:text-[#b88c38] transition-colors"
+                  >
+                    <span>Test Link</span>
+                    <ExternalLink size={11} />
+                  </a>
+                ) : (
+                  <span className="text-[11px] text-[#32190D]/40">Not set</span>
+                )}
+              </div>
+              <input
+                type="text"
+                placeholder="https://tiktok.com/@krumbistry or @krumbistry"
+                value={settings.tiktokUrl}
+                onChange={(e) =>
+                  setSettings((prev) => ({
+                    ...prev,
+                    tiktokUrl: e.target.value,
+                  }))
+                }
+                onBlur={() => handleUrlBlur("tiktokUrl")}
+                className="mt-1.5 w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2 text-xs font-mono text-[#32190D] placeholder:text-[#32190D]/30 focus:border-[#D6A64B] focus:bg-white focus:outline-none"
               />
             </div>
           </div>
         </div>
       </div>
     </form>
+    </div>
   );
 }
 
