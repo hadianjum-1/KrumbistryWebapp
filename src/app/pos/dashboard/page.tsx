@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import TrialPaymentPopup from "@/components/pos/TrialPaymentPopup";
 import {
   DollarSign,
   ShoppingBag,
@@ -110,6 +111,7 @@ export default function PosDashboardPage() {
   };
 
   return (
+    
     <div className="space-y-7">
       {/* Page Heading */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -335,6 +337,12 @@ export default function PosDashboardPage() {
           </div>
         </div>
       </div>
+      <TrialPaymentPopup
+  isOwner={true}
+  trialEndDate="2026-11-24T23:59:59+05:00"
+  paymentUrl="https://your-payment-link.com"
+  paymentCompleted={false}
+/>
     </div>
   );
 }

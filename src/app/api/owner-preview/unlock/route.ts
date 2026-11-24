@@ -5,6 +5,7 @@ import { timingSafeEqual } from "crypto";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
+  
   try {
     const origin = request.headers.get("origin");
     const requestOrigin = new URL(request.url).origin;
