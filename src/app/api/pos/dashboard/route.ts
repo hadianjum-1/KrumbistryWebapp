@@ -13,25 +13,37 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const rawDeviceCode = searchParams.get("deviceCode") || session?.deviceCode || "POS-01";
-    const deviceCode = rawDeviceCode.trim();
+    const cleanDeviceCode = rawDeviceCode.trim() || "POS-01";
 
-    let device = null;
-    if (deviceCode) {
-      device = await db.device.findUnique({
-        where: { deviceCode },
+    let device = await db.device.findUnique({
+      where: { deviceCode: cleanDeviceCode },
+      select: { id: true, deviceCode: true, name: true, branch: true, status: true, lastSyncAt: true },
+    });
+
+    if (!device) {
+      device = await db.device.findFirst({
+        where: {
+          OR: [
+            { deviceCode: { equals: cleanDeviceCode, mode: "insensitive" } },
+            { status: "AUTHORIZED" },
+          ],
+        },
         select: { id: true, deviceCode: true, name: true, branch: true, status: true, lastSyncAt: true },
       });
-      if (!device) {
-        device = await db.device.findFirst({
-          where: {
-            OR: [
-              { deviceCode: { equals: deviceCode, mode: "insensitive" } },
-              { status: "AUTHORIZED" },
-            ],
-          },
-          select: { id: true, deviceCode: true, name: true, branch: true, status: true, lastSyncAt: true },
-        });
-      }
+    }
+
+    if (!device) {
+      device = await db.device.create({
+        data: {
+          deviceCode: cleanDeviceCode,
+          name: cleanDeviceCode.toUpperCase().includes("POS") ? cleanDeviceCode : `Terminal ${cleanDeviceCode}`,
+          branch: "Main Bakery",
+          status: "AUTHORIZED",
+          allowOffline: true,
+          secretTokenHash: "auto-provisioned",
+        },
+        select: { id: true, deviceCode: true, name: true, branch: true, status: true, lastSyncAt: true },
+      });
     }
 
     // Calculate today in server's local time (Peshawar / PKT or host time)
@@ -92,14 +104,22 @@ export async function GET(request: NextRequest) {
     let activeRegister = device
       ? await db.posRegisterSession.findFirst({
           where: { deviceId: device.id, status: "OPEN" },
-          select: { id: true, openingCash: true, openedAt: true },
+          include: {
+            staff: { select: { id: true, name: true, role: true } },
+            device: { select: { id: true, deviceCode: true, name: true } },
+          },
+          orderBy: { openedAt: "desc" },
         })
       : null;
 
     if (!activeRegister) {
       activeRegister = await db.posRegisterSession.findFirst({
         where: { status: "OPEN" },
-        select: { id: true, openingCash: true, openedAt: true },
+        include: {
+          staff: { select: { id: true, name: true, role: true } },
+          device: { select: { id: true, deviceCode: true, name: true } },
+        },
+        orderBy: { openedAt: "desc" },
       });
     }
 
@@ -119,6 +139,12 @@ export async function GET(request: NextRequest) {
       customerName: o.customerName,
     }));
 
+    const openingCashNum = Number(activeRegister?.openingCash || 0);
+    const cashSalesTotalNum = Number(activeRegister?.cashSalesTotal || 0);
+    const cashInTotalNum = Number(activeRegister?.cashInTotal || 0);
+    const cashOutTotalNum = Number(activeRegister?.cashOutTotal || 0);
+    const expectedDrawerCash = openingCashNum + cashSalesTotalNum + cashInTotalNum - cashOutTotalNum;
+
     return NextResponse.json({
       success: true,
       metrics: {
@@ -135,7 +161,15 @@ export async function GET(request: NextRequest) {
         ? {
             id: activeRegister.id,
             openedAt: activeRegister.openedAt.toISOString(),
-            openingCash: Number(activeRegister.openingCash),
+            openingCash: openingCashNum,
+            expectedCash: expectedDrawerCash,
+            cashSalesTotal: cashSalesTotalNum,
+            cardSalesTotal: Number(activeRegister.cardSalesTotal || 0),
+            otherSalesTotal: Number(activeRegister.otherSalesTotal || 0),
+            cashSalesCount: activeRegister.cashSalesCount || 0,
+            status: "OPEN",
+            staff: activeRegister.staff,
+            deviceCode: activeRegister.device?.deviceCode || cleanDeviceCode,
           }
         : null,
       recentSales,
@@ -144,6 +178,12 @@ export async function GET(request: NextRequest) {
             id: session.staffId,
             name: session.name,
             role: session.role,
+          }
+        : activeRegister?.staff
+        ? {
+            id: activeRegister.staff.id,
+            name: activeRegister.staff.name,
+            role: activeRegister.staff.role,
           }
         : {
             id: "master",

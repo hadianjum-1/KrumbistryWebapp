@@ -8,6 +8,7 @@ import {
   Save,
   Loader2,
   AlertCircle,
+  Boxes,
 } from "lucide-react";
 import ImageUpload from "@/components/admin/ImageUpload";
 
@@ -37,6 +38,9 @@ export interface ProductFormValues {
   bestseller: boolean;
   available: boolean;
   published: boolean;
+  stockQuantity: number;
+  trackInventory: boolean;
+  lowStockThreshold: number;
   sortOrder: number;
 }
 
@@ -81,6 +85,9 @@ export default function ProductForm({
     bestseller: initialValues?.bestseller ?? false,
     available: initialValues?.available ?? true,
     published: initialValues?.published ?? true,
+    stockQuantity: initialValues?.stockQuantity ?? 100,
+    trackInventory: initialValues?.trackInventory ?? true,
+    lowStockThreshold: initialValues?.lowStockThreshold ?? 5,
     sortOrder: initialValues?.sortOrder ?? 0,
   });
 
@@ -558,6 +565,88 @@ export default function ProductForm({
               <p className="text-[11px] text-[#32190D]/50 mt-1">
                 Lower numbers display first in listings.
               </p>
+            </div>
+          </div>
+
+          {/* Card: Inventory & Stock Quantity */}
+          <div className="bg-white border border-[#32190D]/10 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <Boxes size={16} className="text-[#D6A64B]" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-[#8C6219]">
+                Inventory &amp; Quantity
+              </h2>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-[#32190D]">
+                Stock Quantity (Available Units) *
+              </label>
+              <div className="relative mt-1.5">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  value={form.stockQuantity}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      stockQuantity: Math.max(0, parseInt(e.target.value, 10) || 0),
+                    }))
+                  }
+                  placeholder="e.g. 50"
+                  className="w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2.5 text-xs font-mono font-bold text-[#32190D] focus:border-[#D6A64B] focus:bg-white focus:outline-none"
+                />
+              </div>
+              <p className="text-[11px] text-[#32190D]/60 mt-1">
+                Units currently in bakery stock ready for counter sales &amp; online orders.
+              </p>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t border-[#32190D]/10">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.trackInventory}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, trackInventory: e.target.checked }))
+                  }
+                  className="mt-0.5 rounded border-[#32190D]/20 text-[#D6A64B] focus:ring-[#D6A64B]"
+                />
+                <div>
+                  <span className="text-xs font-semibold text-[#32190D]">
+                    Track Inventory Automatically
+                  </span>
+                  <p className="text-[11px] text-[#32190D]/60">
+                    Automatically decrement available quantity upon each order or POS sale.
+                  </p>
+                </div>
+              </label>
+
+              {form.trackInventory && (
+                <div className="pl-6 pt-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#32190D]">
+                    Low Stock Alert Level
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.lowStockThreshold}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        lowStockThreshold: Math.max(0, parseInt(e.target.value, 10) || 0),
+                      }))
+                    }
+                    placeholder="e.g. 5"
+                    className="mt-1.5 w-full rounded-lg border border-[#32190D]/15 bg-[#F8F3E9]/30 px-3.5 py-2 text-xs font-mono text-[#32190D] focus:border-[#D6A64B] focus:bg-white focus:outline-none"
+                  />
+                  <p className="text-[11px] text-[#32190D]/60 mt-1">
+                    Triggers low stock warnings when remaining units hit or fall below this count.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

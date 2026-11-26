@@ -184,6 +184,17 @@ export const productSchema = z.object({
   bestseller: z.preprocess((val) => Boolean(val), z.boolean().default(false)),
   available: z.preprocess((val) => (val === undefined ? true : Boolean(val)), z.boolean().default(true)),
   published: z.preprocess((val) => (val === undefined ? true : Boolean(val)), z.boolean().default(true)),
+  stockQuantity: z.preprocess((val) => {
+    if (val === "" || val === null || val === undefined) return 100;
+    const n = parseInt(String(val), 10);
+    return isNaN(n) ? 0 : Math.max(0, n);
+  }, z.number().int().min(0, "Stock quantity cannot be negative").default(100)),
+  trackInventory: z.preprocess((val) => (val === undefined ? true : Boolean(val)), z.boolean().default(true)),
+  lowStockThreshold: z.preprocess((val) => {
+    if (val === "" || val === null || val === undefined) return 5;
+    const n = parseInt(String(val), 10);
+    return isNaN(n) ? 5 : Math.max(0, n);
+  }, z.number().int().min(0, "Threshold cannot be negative").default(5)),
   sortOrder: z.preprocess((val) => {
     const n = parseInt(String(val), 10);
     return isNaN(n) ? 0 : n;

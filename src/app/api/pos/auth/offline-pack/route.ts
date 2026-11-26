@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const rawDeviceCode = searchParams.get("deviceCode") || "POS BRANCH 1";
-    const deviceCode = rawDeviceCode.trim();
+    const rawDeviceCode = searchParams.get("deviceCode") || "POS-01";
+    const deviceCode = rawDeviceCode.trim() || "POS-01";
 
     let device = await db.device.findUnique({
       where: { deviceCode },
@@ -22,16 +22,23 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    if (!device || device.status === "REVOKED") {
-      return NextResponse.json(
-        { success: false, error: "Device is revoked or not registered." },
-        { status: 403 }
-      );
+    if (!device) {
+      // Auto-provision so terminal can cache offline data
+      device = await db.device.create({
+        data: {
+          deviceCode,
+          name: deviceCode.toUpperCase().includes("POS") ? deviceCode : `Terminal ${deviceCode}`,
+          branch: "Main Bakery",
+          status: "AUTHORIZED",
+          allowOffline: true,
+          secretTokenHash: "auto-provisioned",
+        },
+      });
     }
 
-    if (!device.allowOffline) {
+    if (device.status === "REVOKED") {
       return NextResponse.json(
-        { success: false, error: "Offline mode is not permitted for this device." },
+        { success: false, error: "Terminal is revoked by bakery management." },
         { status: 403 }
       );
     }

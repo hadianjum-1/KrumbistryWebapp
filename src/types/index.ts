@@ -33,6 +33,9 @@ export interface Product {
   available: boolean;
   published: boolean;
   sortOrder: number;
+  stockQuantity?: number;
+  trackInventory?: boolean;
+  lowStockThreshold?: number;
   createdAt: string;
   updatedAt: string;
   tag?: string;

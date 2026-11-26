@@ -197,7 +197,7 @@ export default function AdminProductsPage() {
             className="inline-flex items-center gap-1.5 rounded-lg bg-[#32190D] px-4 py-2 text-xs font-semibold text-white hover:bg-[#432314] transition-colors shadow-sm"
           >
             <Plus size={16} className="text-[#D6A64B]" />
-            <span>Create New Product</span>
+            <span className="text-amber-50">Create New Product</span>
           </Link>
         </div>
       </div>
@@ -279,7 +279,7 @@ export default function AdminProductsPage() {
               className="inline-flex items-center gap-1.5 mt-4 rounded-lg bg-[#32190D] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#432314] transition-colors"
             >
               <Plus size={14} className="text-[#D6A64B]" />
-              <span>Create Product</span>
+              <span className="text-amber-50">Create Product</span>
             </Link>
           </div>
         ) : (

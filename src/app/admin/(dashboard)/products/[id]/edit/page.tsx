@@ -43,6 +43,9 @@ export default function EditProductPage() {
           bestseller: p.bestseller ?? false,
           available: p.available ?? true,
           published: p.published ?? true,
+          stockQuantity: p.stockQuantity ?? 100,
+          trackInventory: p.trackInventory ?? true,
+          lowStockThreshold: p.lowStockThreshold ?? 5,
           sortOrder: p.sortOrder ?? 0,
         });
       })

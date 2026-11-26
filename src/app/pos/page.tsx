@@ -27,6 +27,7 @@ import {
   getLocalDeviceCode,
 } from "@/lib/posSyncEngine";
 import ThermalReceipt, { ReceiptData } from "@/components/pos/ThermalReceipt";
+import TrialPaymentPopup from "@/components/pos/TrialPaymentPopup";
 
 interface CartItem {
   product: CachedProduct;
@@ -820,6 +821,16 @@ export default function POSPage() {
           onClose={() => setActiveReceipt(null)}
         />
       )}
+      <TrialPaymentPopup
+  isOwner={true}
+  trialEndDate="2026-11-27T23:59:59+05:00"
+  onPaymentClick={() => {
+    alert("Payment instructions given in Developer Console");
+    console.info("KRUMBISTRY POS: Contact the developer for payment instructions.");
+  }}
+  paymentCompleted={false}
+/>
     </div>
+   
   );
 }

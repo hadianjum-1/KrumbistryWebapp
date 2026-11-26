@@ -2,18 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import TrialPaymentPopup from "@/components/pos/TrialPaymentPopup";
 import {
   DollarSign,
-  ShoppingBag,
   TrendingUp,
-  Receipt,
-  ArrowRight,
-  Printer,
-  Calendar,
   CreditCard,
-  Store,
+  ArrowRight,
   Clock,
+  Lock,
+  Unlock,
+  CheckCircle2,
+  AlertCircle,
+  Receipt,
+  User,
 } from "lucide-react";
 import { getLocalDeviceCode, checkBackendReachable, pushPendingSales } from "@/lib/posSyncEngine";
 import { posDb } from "@/lib/posDb";
@@ -21,36 +21,85 @@ import { posDb } from "@/lib/posDb";
 export default function PosDashboardPage() {
   const [deviceCode, setDeviceCode] = useState("POS-01");
   const [metrics, setMetrics] = useState<any>(null);
+  const [registerSession, setRegisterSession] = useState<any>(null);
+  const [localActiveSession, setLocalActiveSession] = useState<any>(null);
+  const [activeStaff, setActiveStaff] = useState<{ id: string; name: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [offlineQueueCount, setOfflineQueueCount] = useState(0);
   const [offlineQueueTotal, setOfflineQueueTotal] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
-
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const code = getLocalDeviceCode();
     setDeviceCode(code);
 
+    // Load active staff member from local terminal storage
+    const savedStaff = localStorage.getItem("krumbistry_pos_active_staff");
+    if (savedStaff) {
+      try {
+        setActiveStaff(JSON.parse(savedStaff));
+      } catch {}
+    }
+
     const loadMetrics = async (showSpinner = false) => {
       if (showSpinner) setIsRefreshing(true);
       try {
-        const res = await fetch(`/api/pos/dashboard?deviceCode=${code}`);
-        if (res.ok) {
-          const data = await res.json();
+        const [dashRes, regRes] = await Promise.all([
+          fetch(`/api/pos/dashboard?deviceCode=${encodeURIComponent(code)}`),
+          fetch(`/api/pos/register?deviceCode=${encodeURIComponent(code)}`),
+        ]);
+
+        if (dashRes.ok) {
+          const data = await dashRes.json();
           if (data.success) {
             setMetrics(data);
           }
         }
 
-        // Check local offline queue in IndexedDB
+        if (regRes.ok) {
+          const regData = await regRes.json();
+          if (regData.success && regData.hasActiveSession) {
+            setRegisterSession(regData.session);
+            // Sync to local IndexedDB to ensure offline continuity
+            if (posDb) {
+              await posDb.localRegisterSession.put({
+                id: regData.session.id,
+                deviceCode: code,
+                staffId: regData.session.staff?.id || "anonymous",
+                staffName: regData.session.staff?.name || "Staff",
+                openedAt: regData.session.openedAt,
+                openingCash: regData.session.openingCash,
+                cashSalesTotal: regData.session.cashSalesTotal,
+                cardSalesTotal: regData.session.cardSalesTotal,
+                otherSalesTotal: regData.session.otherSalesTotal,
+                cashInTotal: regData.session.cashInTotal,
+                cashOutTotal: regData.session.cashOutTotal,
+                cashSalesCount: regData.session.cashSalesCount,
+                status: "OPEN",
+              });
+            }
+          } else {
+            setRegisterSession(null);
+          }
+        }
+
+        // Check local IndexedDB for active offline register session & pending sales
         if (posDb) {
+          const localShift = await posDb.localRegisterSession
+            .where("status")
+            .equals("OPEN")
+            .first();
+          setLocalActiveSession(localShift || null);
+
           const unsynced = await posDb.pendingSales
             .where("syncStatus")
             .anyOf(["PENDING", "SYNCING", "FAILED"])
             .toArray();
           setOfflineQueueCount(unsynced.length);
-          setOfflineQueueTotal(unsynced.reduce((acc: number, s: { total?: number }) => acc + (s.total || 0), 0));
+          setOfflineQueueTotal(
+            unsynced.reduce((acc: number, s: { total?: number }) => acc + (s.total || 0), 0)
+          );
         }
       } catch (err) {
         console.warn("Failed to load dashboard metrics:", err);
@@ -90,18 +139,37 @@ export default function PosDashboardPage() {
     try {
       await pushPendingSales();
       const code = getLocalDeviceCode();
-      const res = await fetch(`/api/pos/dashboard?deviceCode=${code}`);
-      if (res.ok) {
-        const data = await res.json();
+      const [dashRes, regRes] = await Promise.all([
+        fetch(`/api/pos/dashboard?deviceCode=${encodeURIComponent(code)}`),
+        fetch(`/api/pos/register?deviceCode=${encodeURIComponent(code)}`),
+      ]);
+      if (dashRes.ok) {
+        const data = await dashRes.json();
         if (data.success) setMetrics(data);
       }
+      if (regRes.ok) {
+        const regData = await regRes.json();
+        if (regData.success && regData.hasActiveSession) {
+          setRegisterSession(regData.session);
+        } else {
+          setRegisterSession(null);
+        }
+      }
       if (posDb) {
+        const localShift = await posDb.localRegisterSession
+          .where("status")
+          .equals("OPEN")
+          .first();
+        setLocalActiveSession(localShift || null);
+
         const unsynced = await posDb.pendingSales
           .where("syncStatus")
           .anyOf(["PENDING", "SYNCING", "FAILED"])
           .toArray();
         setOfflineQueueCount(unsynced.length);
-        setOfflineQueueTotal(unsynced.reduce((acc: number, s: { total?: number }) => acc + (s.total || 0), 0));
+        setOfflineQueueTotal(
+          unsynced.reduce((acc: number, s: { total?: number }) => acc + (s.total || 0), 0)
+        );
       }
     } catch (err) {
       console.warn("Quick sync failed:", err);
@@ -110,8 +178,52 @@ export default function PosDashboardPage() {
     }
   };
 
+  // Resolved active register shift (combining register API, dashboard API, and offline IndexedDB fallback)
+  const activeShift =
+    registerSession ||
+    metrics?.activeRegister ||
+    (localActiveSession
+      ? {
+          id: localActiveSession.id,
+          openedAt: localActiveSession.openedAt,
+          openingCash: Number(localActiveSession.openingCash || 0),
+          expectedCash:
+            Number(localActiveSession.openingCash || 0) +
+            Number(localActiveSession.cashSalesTotal || 0) +
+            Number(localActiveSession.cashInTotal || 0) -
+            Number(localActiveSession.cashOutTotal || 0),
+          cashSalesTotal: Number(localActiveSession.cashSalesTotal || 0),
+          cashSalesCount: localActiveSession.cashSalesCount || 0,
+          status: "OPEN",
+          staff: {
+            name: localActiveSession.staffName || activeStaff?.name || "Cashier",
+            role: "Staff",
+          },
+          isOffline: true,
+        }
+      : null);
+    (localActiveSession
+      ? {
+          id: localActiveSession.id,
+          openedAt: localActiveSession.openedAt,
+          openingCash: Number(localActiveSession.openingCash || 0),
+          expectedCash:
+            Number(localActiveSession.openingCash || 0) +
+            Number(localActiveSession.cashSalesTotal || 0) +
+            Number(localActiveSession.cashInTotal || 0) -
+            Number(localActiveSession.cashOutTotal || 0),
+          cashSalesTotal: Number(localActiveSession.cashSalesTotal || 0),
+          cashSalesCount: localActiveSession.cashSalesCount || 0,
+          status: "OPEN",
+          staff: {
+            name: localActiveSession.staffName || activeStaff?.name || "Cashier",
+            role: "Staff",
+          },
+          isOffline: true,
+        }
+      : null);
+
   return (
-    
     <div className="space-y-7">
       {/* Page Heading */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -126,9 +238,9 @@ export default function PosDashboardPage() {
 
         <Link
           href="/pos"
-          className="inline-flex items-center gap-2 rounded-xl bg-[#32190D] px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#F8F3E9] hover:bg-[#D6A64B] hover:text-[#32190D] transition-all shadow-md w-fit"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#32190D] px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#F8F3E9] hover:bg-[#D6A64B] hover:text-[#32190D] transition-all shadow-md w-fit cursor-pointer"
         >
-          <span>Open Sales Counter</span>
+          <span className="text-amber-50">Open Sales Counter</span>
           <ArrowRight size={14} />
         </Link>
       </div>
@@ -152,7 +264,7 @@ export default function PosDashboardPage() {
               type="button"
               onClick={handleQuickSync}
               disabled={isSyncing}
-              className="px-4 py-2 rounded-xl bg-amber-800 text-white font-bold text-xs hover:bg-amber-900 transition-all shadow-xs disabled:opacity-50"
+              className="px-4 py-2 rounded-xl bg-amber-800 text-white font-bold text-xs hover:bg-amber-900 transition-all shadow-xs disabled:opacity-50 cursor-pointer"
             >
               {isSyncing ? "Syncing..." : "Sync Now"}
             </button>
@@ -247,51 +359,123 @@ export default function PosDashboardPage() {
       </div>
 
       {/* Register Shift & Recent Sales Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
-        {/* Active Register Card */}
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
+        {/* Active Register Shift Card */}
         <div className="rounded-3xl border border-[#32190D]/10 bg-[#FAF6EE] p-6 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-[#32190D]/10">
-              <h3 className="font-serif text-lg font-bold text-[#32190D]">
-                Register Shift
-              </h3>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                    activeShift
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-stone-200 text-stone-600"
+                  }`}
+                >
+                  {activeShift ? <Unlock size={14} /> : <Lock size={14} />}
+                </div>
+                <h3 className="font-serif text-lg font-bold text-[#32190D]">
+                  Register Shift
+                </h3>
+              </div>
+
               <span
-                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                  metrics?.activeRegister
-                    ? "bg-emerald-100 text-emerald-800"
-                    : "bg-gray-200 text-gray-700"
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                  activeShift
+                    ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                    : "bg-stone-200 text-stone-700 border border-stone-300"
                 }`}
               >
-                {metrics?.activeRegister ? "SHIFT OPEN" : "CLOSED"}
+                {activeShift ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>SHIFT OPEN</span>
+                  </>
+                ) : (
+                  <span>SHIFT CLOSED</span>
+                )}
               </span>
             </div>
 
-            <div className="py-4 space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-[#806E5D]">Terminal:</span>
-                <strong className="text-[#32190D]">{deviceCode}</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#806E5D]">Current Staff:</span>
-                <strong className="text-[#32190D]">{metrics?.currentStaff?.name || "Staff"}</strong>
-              </div>
-              {metrics?.activeRegister && (
-                <div className="flex justify-between">
-                  <span className="text-[#806E5D]">Opening Float:</span>
-                  <strong className="text-[#32190D]">
-                    Rs. {metrics.activeRegister.openingCash?.toLocaleString()}
+            {/* Shift Details */}
+            {activeShift ? (
+              <div className="py-4 space-y-2.5 text-xs">
+                <div className="flex justify-between items-center py-1 border-b border-[#32190D]/5">
+                  <span className="text-[#806E5D]">Terminal:</span>
+                  <span className="font-mono font-bold text-[#32190D] bg-white px-2 py-0.5 rounded border border-[#32190D]/10">
+                    {deviceCode}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center py-1 border-b border-[#32190D]/5">
+                  <span className="text-[#806E5D]">Shift Opened By:</span>
+                  <strong className="text-[#32190D] flex items-center gap-1">
+                    <User size={12} className="text-[#D6A64B]" />
+                    <span>{activeShift.staff?.name || activeStaff?.name || "Cashier"}</span>
                   </strong>
                 </div>
-              )}
-            </div>
+
+                <div className="flex justify-between items-center py-1 border-b border-[#32190D]/5">
+                  <span className="text-[#806E5D]">Started At:</span>
+                  <strong className="text-[#32190D] font-mono">
+                    {activeShift.openedAt
+                      ? new Date(activeShift.openedAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "Today"}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between items-center py-1 border-b border-[#32190D]/5">
+                  <span className="text-[#806E5D]">Opening Float:</span>
+                  <strong className="text-[#32190D] font-mono">
+                    Rs. {Number(activeShift.openingCash || 0).toLocaleString()}
+                  </strong>
+                </div>
+
+                <div className="flex justify-between items-center py-1.5 bg-white p-2 rounded-xl border border-emerald-200">
+                  <span className="text-emerald-900 font-semibold">Expected Cash in Drawer:</span>
+                  <strong className="text-emerald-800 font-mono text-sm font-bold">
+                    Rs. {Number(activeShift.expectedCash || activeShift.openingCash || 0).toLocaleString()}
+                  </strong>
+                </div>
+              </div>
+            ) : (
+              <div className="py-6 text-center space-y-2">
+                <div className="w-10 h-10 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center mx-auto text-stone-500">
+                  <Lock size={18} />
+                </div>
+                <p className="text-xs font-semibold text-[#32190D]">
+                  No active shift open on terminal {deviceCode}
+                </p>
+                <p className="text-[11px] text-[#806E5D] max-w-xs mx-auto">
+                  Open a new register shift and record your starting drawer cash float before accepting counter payments.
+                </p>
+              </div>
+            )}
           </div>
 
-          <Link
-            href="/pos/register"
-            className="w-full mt-4 py-2.5 rounded-xl border border-[#32190D]/20 bg-white text-xs font-bold text-center text-[#32190D] hover:bg-[#32190D] hover:text-white transition-all shadow-xs"
-          >
-            Manage Register Drawer
-          </Link>
+          {/* Action Button */}
+          {activeShift ? (
+            <div className="space-y-2 mt-2">
+              <Link
+                href="/pos/register"
+                className="w-full py-2.5 rounded-xl border border-[#32190D]/20 bg-white text-xs font-bold text-center text-[#32190D] hover:bg-[#32190D] hover:text-white transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span>Manage Drawer &amp; Float</span>
+                <ArrowRight size={13} />
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="/pos/register"
+              className="w-full mt-2 py-2.5 rounded-xl bg-[#32190D] text-xs font-bold text-center text-[#F8F3E9] hover:bg-[#D6A64B] hover:text-[#32190D] transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Unlock size={14} />
+              <span>Open Register Shift Now</span>
+            </Link>
+          )}
         </div>
 
         {/* Recent Transactions Table */}
@@ -317,7 +501,7 @@ export default function PosDashboardPage() {
               metrics?.recentSales?.map((sale: any) => (
                 <div
                   key={sale.id}
-                  className="py-3 flex items-center justify-between text-xs"
+                  className="py-3 flex items-center justify-between text-xs hover:bg-[#F8F3E9]/30 -mx-2 px-2 rounded-lg transition-colors"
                 >
                   <div>
                     <span className="font-mono font-bold text-[#32190D]">
@@ -337,12 +521,6 @@ export default function PosDashboardPage() {
           </div>
         </div>
       </div>
-      <TrialPaymentPopup
-  isOwner={true}
-  trialEndDate="2026-11-24T23:59:59+05:00"
-  paymentUrl="https://your-payment-link.com"
-  paymentCompleted={false}
-/>
     </div>
   );
 }
